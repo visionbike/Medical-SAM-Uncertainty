@@ -1,0 +1,4 @@
+# ignored folders
+.idea/
+data/
+__pycache__/
