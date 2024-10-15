@@ -11,9 +11,9 @@ def visualize_images(
         image: torch.Tensor,
         mask_prd: torch.Tensor,
         mask_tgt: torch.Tensor,
-        map_entropy: Optional[torch.Tensor],
-        map_mae: Optional[torch.Tensor],
-        save_path: str,
+        map_entropy: Optional[torch.Tensor] = None,
+        map_mae: Optional[torch.Tensor] = None,
+        save_path: str = "",
         reverse: bool = False,
 ) -> None:
     """

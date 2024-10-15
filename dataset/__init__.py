@@ -5,7 +5,10 @@ from torch.utils.data import DataLoader
 from .utils import *
 
 __all__ = [
-    "get_dataloaders"
+    "get_dataloaders",
+    "generate_click_prompt",
+    "random_click",
+    "random_box"
 ]
 
 
