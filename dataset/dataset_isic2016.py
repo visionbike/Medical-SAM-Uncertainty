@@ -4,6 +4,7 @@ import fireducks.pandas as pd
 import numpy as np
 import cv2
 import torch
+from PIL import Image
 from torch.utils.data import Dataset
 from .utils import *
 
@@ -62,7 +63,7 @@ class ISIC2016(Dataset):
         # read image and label (mask)
         image = cv2.imread(Path(self.path_data, self.list_images[idx]).__str__())
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = cv2.imread(Path(self.path_data, self.list_labels[idx]).__str__(), cv2.IMREAD_GRAYSCALE)
+        label = cv2.imread(Path(self.path_data, self.list_labels[idx]).__str__(), cv2.IMREAD_GRAYSCALE) / 255.
         # get click points
         point_label, point_coord = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
@@ -76,10 +77,7 @@ class ISIC2016(Dataset):
             image = self.transform(image)
             torch.set_rng_state(state)
         if self.transform_mask:
-            # save the current random number generate for reproducibility
-            state = torch.get_rng_state()
-            label = self.transform_mask(label).int()
-            torch.set_rng_state(state)
+            label = self.transform_mask(label).long()
         name = Path(self.list_images[idx]).name[:-4]
         return {
             "image": image,

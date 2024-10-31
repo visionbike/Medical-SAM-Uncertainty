@@ -2,6 +2,7 @@ from typing import Tuple
 from argparse import Namespace
 import torch
 import torchvision.transforms.v2 as vtf2
+import torchvision.transforms as vtf
 from torch.utils.data import DataLoader
 from .utils import *
 
@@ -25,22 +26,23 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
     transform_train = vtf2.Compose([
         vtf2.ToImage(),
         vtf2.ToDtype(torch.float32, scale=True),
-        vtf2.Resize((args.image_size, args.image_size)),
+        vtf.Resize((args.image_size, args.image_size)),
     ])
     transform_train_seg = vtf2.Compose([
         vtf2.ToImage(),
-        vtf2.ToDtype(torch.float32, scale=True),
-        vtf2.Resize((args.output_size, args.output_size,))
+        vtf2.ToDtype(torch.float32, scale=False),
+        vtf.Resize((args.output_size, args.output_size)),
     ])
     transform_test = vtf2.Compose([
         vtf2.ToImage(),
         vtf2.ToDtype(torch.float32, scale=True),
-        vtf2.Resize((args.image_size, args.image_size))
+        vtf.Resize((args.image_size, args.image_size)),
     ])
     transform_test_seg = vtf2.Compose([
+        # vtf.ToTensor(),
         vtf2.ToImage(),
-        vtf2.ToDtype(torch.float32, scale=True),
-        vtf2.Resize((args.output_size, args.output_size))
+        vtf2.ToDtype(torch.float32, scale=False),
+        vtf.Resize((args.output_size, args.output_size)),
     ])
     loader_train, loader_test = None, None
     if args.dataset == "isic":
