@@ -27,7 +27,7 @@ def get_optimizer(args: Namespace, parameters: ParamsT) -> Tuple[Optimizer, Opti
         print("The optimizer is not supported now!!!")
 
     scheduler = None
-    if args.lr_shceduler == "step":
+    if args.lr_scheduler == "step":
         from torch.optim.lr_scheduler import StepLR
         scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
     else:

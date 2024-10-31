@@ -23,11 +23,11 @@ def get_metric(name: str) -> Any:
         from .metric_dicecoeff import DiceCoeffMetric
         return DiceCoeffMetric(reduction="none")
     elif name == "mae":
-        from monai.metrics import MAEMetric
-        return MAEMetric(reduction="none")
+        from .metric_mae import MAEMetric
+        return MAEMetric(reduction="none", act="sigmoid", scale=True)
     elif name == "entropy":
         from .metric_entropy import EntropyMetric
-        return EntropyMetric(reduction="none", act="softmax")
+        return EntropyMetric(reduction="none", act="sigmoid", scale=True)
     elif name == "iou":
         from .metric_iou import IouMetric
         return IouMetric(reduction="none")

@@ -10,7 +10,7 @@ if [ "$NAME" == "ISIC2016" ]; then
     URL="https://isic-challenge-data.s3.amazonaws.com/2016/$ZIP_FILENAME.zip"
     wget -N "$URL" -O "$ZIP_FILENAME.zip"
   fi
-  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/$ZIP_FILENAME"
+  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/"
   rm "$ZIP_FILENAME.zip"
 
   ZIP_FILENAME="ISBI2016_ISIC_Part1_Test_Data"
@@ -19,7 +19,7 @@ if [ "$NAME" == "ISIC2016" ]; then
     URL="https://isic-challenge-data.s3.amazonaws.com/2016/$ZIP_FILENAME.zip"
     wget -N "$URL" -O "$ZIP_FILENAME.zip"
   fi
-  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/$ZIP_FILENAME"
+  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/"
   rm "$ZIP_FILENAME.zip"
 
   ZIP_FILENAME="ISBI2016_ISIC_Part1_Training_GroundTruth"
@@ -28,7 +28,7 @@ if [ "$NAME" == "ISIC2016" ]; then
     URL="https://isic-challenge-data.s3.amazonaws.com/2016/$ZIP_FILENAME.zip"
     wget -N "$URL" -O "$ZIP_FILENAME.zip"
   fi
-  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/$ZIP_FILENAME"
+  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/"
   rm "$ZIP_FILENAME.zip"
 
   ZIP_FILENAME="ISBI2016_ISIC_Part1_Test_GroundTruth"
@@ -37,7 +37,7 @@ if [ "$NAME" == "ISIC2016" ]; then
     URL="https://isic-challenge-data.s3.amazonaws.com/2016/$ZIP_FILENAME.zip"
     wget -N "$URL" -O "$ZIP_FILENAME.zip"
   fi
-  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/$ZIP_FILENAME"
+  unzip "$ZIP_FILENAME.zip" -d "./data/$NAME/"
   rm "$ZIP_FILENAME.zip"
 
   CSV_FILENAME="ISBI2016_ISIC_Part1_Training_GroundTruth.csv"

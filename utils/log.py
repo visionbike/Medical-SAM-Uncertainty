@@ -43,7 +43,7 @@ def create_log_directory(root: str, exp_name: str) -> Dict[str, str]:
     path_sample.mkdir(parents=True, exist_ok=True)
 
     # create tensorboard path
-    path_run = path_exp / "run" / timestamp
+    path_run = path_exp / "run"
     path_run.mkdir(parents=True, exist_ok=True)
 
     return {

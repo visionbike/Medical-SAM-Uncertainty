@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 
 __all__ = [
-    "EntropyMetric"
+    "MAEMetric"
 ]
 
-class EntropyMetric(nn.Module):
+class MAEMetric(nn.Module):
     """
     The implementation of entropy metric of each tensor's channel.
     """
@@ -23,25 +23,22 @@ class EntropyMetric(nn.Module):
         self.reduction = reduction
         self.act = act
         self.scale = scale
+        self.mae = nn.L1Loss(reduction=reduction)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x (Tensor): input tensor in shape of (B, C, H, W).
+            prd (Tensor): predicted tensor in shape of (B, C, H, W).
+            tgt (Tensor): ground truth tensor in shape of (B, C, H, W).
         Returns:
             (Tensor): if `reduction` is "none", the same shape as the input.
         """
         if self.act == "sigmoid":
-            x = torch.sigmoid(x)
+            prd = torch.sigmoid(prd)
         elif self.act == "softmax":
-            x = torch.softmax(x, dim=1)
+            prd = torch.softmax(prd, dim=1)
 
-        if self.reduction == "none":
-            x = -(x * torch.log(x))
-        elif self.reduction == "sum":
-            x = -torch.sum(x * torch.log(x), dim=1)
-        elif self.reduction == "mean":
-            x = -torch.mean(x * torch.log(x), dim=1)
+        x = self.mae(prd, tgt)
 
         if self.scale:
             if self.reduction == "none":

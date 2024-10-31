@@ -68,7 +68,7 @@ class ISIC2016(Dataset):
         if self.prompt == "click":
             # resize label for generating point click
             label_ = cv2.resize(label, (self.image_size, self.image_size))
-            point_label, point_coord = random_click(label_ / 255, point_labels=1)
+            point_label, point_coord = random_click(label_ / 255., point_labels=1)
         # transform the input
         if self.transform:
             # save the current random number generate for reproducibility
