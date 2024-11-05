@@ -25,24 +25,27 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
     # define image/mask transformation for train/test datasets
     transform_train = vtf2.Compose([
         vtf2.ToImage(),
+        vtf2.ToDtype(torch.uint8, scale=True),
+        vtf2.Resize((args.image_size, args.image_size)),
         vtf2.ToDtype(torch.float32, scale=True),
-        vtf.Resize((args.image_size, args.image_size)),
     ])
     transform_train_seg = vtf2.Compose([
         vtf2.ToImage(),
-        vtf2.ToDtype(torch.float32, scale=False),
-        vtf.Resize((args.output_size, args.output_size)),
+        vtf2.ToDtype(torch.uint8, scale=True),
+        vtf2.Resize((args.output_size, args.output_size)),
+        vtf2.ToDtype(torch.float32, scale=True),
     ])
     transform_test = vtf2.Compose([
         vtf2.ToImage(),
+        vtf2.ToDtype(torch.uint8, scale=True),
+        vtf2.Resize((args.image_size, args.image_size)),
         vtf2.ToDtype(torch.float32, scale=True),
-        vtf.Resize((args.image_size, args.image_size)),
     ])
     transform_test_seg = vtf2.Compose([
-        # vtf.ToTensor(),
         vtf2.ToImage(),
-        vtf2.ToDtype(torch.float32, scale=False),
-        vtf.Resize((args.output_size, args.output_size)),
+        vtf2.ToDtype(torch.uint8, scale=True),
+        vtf2.Resize((args.output_size, args.output_size)),
+        vtf2.ToDtype(torch.float32, scale=True),
     ])
     loader_train, loader_test = None, None
     if args.dataset == "isic":

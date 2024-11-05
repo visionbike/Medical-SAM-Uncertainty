@@ -61,15 +61,19 @@ class ISIC2016(Dataset):
             (Dict): image, ground truth (mask), prompt data and related metadata.
         """
         # read image and label (mask)
-        image = cv2.imread(Path(self.path_data, self.list_images[idx]).__str__())
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = cv2.imread(Path(self.path_data, self.list_labels[idx]).__str__(), cv2.IMREAD_GRAYSCALE) / 255.
+        #image = cv2.imread(Path(self.path_data, self.list_images[idx]).__str__())
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #label = cv2.imread(Path(self.path_data, self.list_labels[idx]).__str__(), cv2.IMREAD_GRAYSCALE)
+        #label = cv2.resize(label, (self.image_size, self.image_size))
+        image = Image.open(Path(self.path_data, self.list_images[idx]).__str__()).convert("RGB")
+        label = Image.open(Path(self.path_data, self.list_labels[idx]).__str__()).convert("L")
+        label = label.resize((self.image_size, self.image_size))
         # get click points
         point_label, point_coord = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
             # resize label for generating point click
-            label_ = cv2.resize(label, (self.image_size, self.image_size))
-            point_label, point_coord = random_click(label_ / 255., point_labels=1)
+            #label = cv2.resize(label, (self.image_size, self.image_size))
+            point_label, point_coord = random_click(np.array(label) / 255., point_labels=1)
         # transform the input
         if self.transform:
             # save the current random number generate for reproducibility
@@ -77,7 +81,7 @@ class ISIC2016(Dataset):
             image = self.transform(image)
             torch.set_rng_state(state)
         if self.transform_mask:
-            label = self.transform_mask(label).long()
+            label = self.transform_mask(label).int()
         name = Path(self.list_images[idx]).name[:-4]
         return {
             "image": image,

@@ -28,7 +28,7 @@ class ModelSAM(ModelBase, ABC):
         super().__init__()
         self.args = args
         self.device, self.device_ids = get_device(args.ExpConfig.use_gpu, args.ExpConfig.gpu_device, args.ExpConfig.distributed)
-        self.net = get_network(args.NetworkConfig, use_gpu=args.ExpConfig.use_gpu, device=self.device, distributed=self.device_ids)
+        self.net = get_network(args.NetworkConfig, use_gpu=args.ExpConfig.use_gpu, device=self.device, distributed=self.device_ids, pretrain=args.ExpConfig.pretrain)
         self.optimizer, self.lr_scheduler = get_optimizer(args.OptimConfig, self.net.parameters())
         self.criterion = get_loss(args.LossConfig, device=self.device)
         self.metrics = get_metrics(args.MetricConfig)

@@ -18,7 +18,7 @@ def get_loss(args: Namespace, device: Device) -> Optional[Loss]:
     """
     if args.loss == "bce_w_logit":
         from torch.nn import BCEWithLogitsLoss
-        weight_pos = torch.ones([1]).to(device)
+        weight_pos = torch.ones([1]).to(device) * 2
         return BCEWithLogitsLoss(pos_weight=weight_pos)
     elif args.loss == "dice":
         from monai.losses import DiceLoss
