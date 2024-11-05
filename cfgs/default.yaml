@@ -1,0 +1,66 @@
+ExpConfig:
+  # experimental name
+  exp_name: "sam_isic_1024"
+  # whether to use gpu
+  use_gpu: True
+  # which gpu device to use
+  gpu_device: 0
+  # multiple gpu ids to use, with null is None
+  distributed: null
+  # checkpoint path for pretrained model, with null is None
+  pretrain: null
+  # checkpoint path for trained model, with null is None
+  ckpt: null
+  # number of training epochs
+  epochs: 1
+  # validation frequency
+  val_freq: 1
+  # visualization frequency
+  vis_freq: 1
+DataConfig:
+  # the dataset name: isic, refuge
+  dataset: "isic"
+  # dataset path stored in ./data
+  path: "./data/ISIC2016"
+  # image size
+  image_size: 128
+  # output size
+  output_size: 128
+  # batch size
+  batch_size: 1
+  # number of workers
+  workers: 4
+  # whether to shuffle dataset
+  shuffle: True
+  # the number of mask outputs for multi-class segmentation:
+  # 1 for ISIC dataset, 2 for REFUGE dataset, other for BTCV dataset
+  multimask_output: 1
+  # evaluation chunk:
+  # 0 for 2D image, 0 or other for 3D image
+  eval_chunk: 0
+  # whether 3D image or 2D image dataset
+  is_3d: False
+NetworkConfig:
+  # network type: "sam", "mobile_sam_v2"
+  net: "sam"
+  # encoder type: "default", "vit_t", "vit_b", "vit_l", "vit_h"
+  encoder: "default"
+  # block type: "default", "adapt", "lora", "adalora"
+  block: "adapt"
+  # middle dim of adapter or the rank of lora matrix
+  # default: null
+  mid_dim: null
+OptimConfig:
+  # optimizer name: null, "adam"
+  optimizer: "adam"
+  # lr scheduler name: null, "step"
+  lr_scheduler: "step"
+  # learning rate
+  lr: 0.0001
+LossConfig:
+  # criterion name: "bce_w_logit", "dice"
+  loss: "bce_w_logit"
+MetricConfig:
+  # metric names: "dice", "dice_coeff "mae", "entropy", "iou"
+  metrics: ["dice_coeff", "iou", "mae", "entropy"]
+  thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
