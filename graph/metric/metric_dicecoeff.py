@@ -1,9 +1,35 @@
+from typing import Any
+
 import torch
 import torch.nn as nn
+import torch.autograd as autograd
 
 __all__ = [
     "DiceCoeffMetric"
 ]
+
+
+class DiceCoeff(autograd.Function):
+    """
+    Dice coeff for the individual example
+    """
+
+    def forward(self, prd: torch.Tensor, tgt: torch.Tensor, eps: float = 0.0001) -> torch.Tensor:
+        self.save_for_backward(prd, tgt)
+        self.inter = torch.dot(prd.view(-1), tgt.view(-1))
+        self.union = torch.sum(prd) + torch.sum(tgt) + eps
+        return (2 * self.inter.float() + eps) / self.union.float()
+
+    def backward(self, grad_output: torch.Tensor) -> torch.Tensor:
+        prd, tgt = self.saved_variables
+        grad_prd = grad_tgt = None
+
+        if self.needs_input_grad[0]:
+            grad_prd = grad_tgt * 2 * (tgt * self.union - self.inter) / (self.union * self.union)
+        if self.needs_input_grad[1]:
+            grad_tgt = None
+
+        return grad_prd, grad_tgt
 
 
 class DiceCoeffMetric(nn.Module):
@@ -24,14 +50,16 @@ class DiceCoeffMetric(nn.Module):
     def _dice_coeff(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            prd (Tensor): predicted mask in shape of (B, 1, H, W).
-            tgt (Tensor): target mask in shape of (B, 1, H, W).
+            prd (Tensor): predicted mask in shape of (B, H, W).
+            tgt (Tensor): target mask in shape of (B, H, W).
         Returns:
             (Tensor): dice score of the single mask.
         """
-        intersect = torch.dot(prd.view(-1), tgt.view(-1))
-        union = torch.sum(prd) + torch.sum(tgt) + self.eps
-        return (2 * intersect.float() + self.eps) / union.float()
+        s = torch.zeros(1, dtype=torch.float32, device=prd.device)
+        i = 0
+        for i, c in enumerate(zip(prd, tgt)):
+            s += DiceCoeff().forward(prd[i], tgt[i], eps=self.eps)
+        return s / (i + 1)
 
     def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """

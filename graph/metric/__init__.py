@@ -22,17 +22,17 @@ def get_metric(name: str) -> Any:
     elif name == "dice_coeff":
         from .metric_dicecoeff import DiceCoeffMetric
         return DiceCoeffMetric(reduction="none")
+    elif name == "iou":
+        from .metric_iou import IouMetric
+        return IouMetric(reduction="none")
     elif name == "mae":
         from .metric_mae import MAEMetric
         return MAEMetric(reduction="none", act="sigmoid", scale=True)
     elif name == "entropy":
         from .metric_entropy import EntropyMetric
         return EntropyMetric(reduction="none", act="sigmoid", scale=True)
-    elif name == "iou":
-        from .metric_iou import IouMetric
-        return IouMetric(reduction="none")
     else:
-        print("The metric is not supported now !!!")
+        print("The metric is not supported now !")
         return None
 
 

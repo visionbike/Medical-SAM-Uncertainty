@@ -18,20 +18,21 @@ class IouMetric(nn.Module):
                 "none": dice coeff for each channel (mask).
         """
         super().__init__()
-        self.eps = 1e-6
+        self.eps = eps
         self.reduction = reduction
 
     def _iou(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            prd (Tensor): predict tensor in shape of (B, 1, H, W).
-            tgt (Tensor): target tensor in shape of (B, 1, H, W).
+            prd (Tensor): predict tensor in shape of (B, H, W).
+            tgt (Tensor): target tensor in shape of (B, H, W).
         Returns:
             (Tensor): iou score of the single mask.
         """
-        intersect = torch.dot(prd.view(-1), tgt.view(-1)) + self.eps
-        union = torch.sum(prd) + torch.sum(tgt) + self.eps
-        return intersect / union
+
+        inter = (prd & tgt).sum((1, 2))
+        union = (prd | tgt).sum((1, 2))
+        return (inter + self.eps) / (union + self.eps)
 
     def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
@@ -44,7 +45,7 @@ class IouMetric(nn.Module):
         _, C, _, _ = prd.shape
         iou_score = []
         for i in range(C):
-            iou_score.append(self._iou(prd[:, i, :, :], tgt[:, i, :, :]))
+            iou_score.append(self._iou(prd[:, i, :, :].int(), tgt[:, i, :, :].int()))
         iou_score = torch.tensor(iou_score).float()
         if self.reduction == "mean":
             return iou_score.mean()
