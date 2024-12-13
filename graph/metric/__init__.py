@@ -16,10 +16,7 @@ def get_metric(name: str) -> Any:
     Returns:
         (Any): metric function
     """
-    if name == "dice":
-        from monai.metrics import DiceMetric
-        return DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
-    elif name == "dice_coeff":
+    if name == "dice_coeff":
         from .metric_dicecoeff import DiceCoeffMetric
         return DiceCoeffMetric(reduction="none")
     elif name == "iou":

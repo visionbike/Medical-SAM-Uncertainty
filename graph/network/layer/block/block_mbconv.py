@@ -39,13 +39,13 @@ class MBConvBlock(nn.Module):
         self.resolution = resolution
         self.depth = depth
         self.use_checkpoint = use_checkpoint
-        # build blocks.
+        # build blocks
         self.blocks = nn.ModuleList([
             MBConv(
                 dim, dim, conv_expand_ratio, activation, drop_path[i] if isinstance(drop_path, list) else drop_path,
             ) for i in range(depth)
         ])
-        # patch merging layer.
+        # patch merging layer
         if downsample is not None:
             self.downsample = downsample(resolution, dim=dim, out_dim=out_dim, activation=activation)
         else:

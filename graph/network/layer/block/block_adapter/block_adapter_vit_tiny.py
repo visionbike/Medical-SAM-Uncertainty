@@ -109,24 +109,9 @@ class TinyViTAdapterBlock(nn.Module):
             ).reshape(
                 B * nH * nW, self.window_size * self.window_size, C
             )
-            # ## 3d branch
-            # if self.args[0].thd:
-            #     from einops import rearrange
-            #     hh, ww = x.shape[1], x.shape[2]
-            #     depth = self.args.chunk
-            #     xd = rearrange(x, '(b d) h w c -> (b h w) d c ', d=depth)
-            #     # xd = rearrange(xd, '(b d) n c -> (b n) d c', d=self.in_chans)
-            #     xd = self.norm1(xd)
-            #     dh, _ = closest_numbers(depth)
-            #     xd = rearrange(xd, 'bhw (dh dw) c -> bhw dh dw c', dh=dh)
-            #     xd = self.Depth_Adapter(self.attn(xd))
-            #     xd = rearrange(xd, '(b n) dh dw c ->(b dh dw) n c', n=hh * ww)
             x = self.attn(x)
             x = self.adapter_spatial(x)
-            # if self.args[0].thd:
-            #     xd = rearrange(xd, 'b (hh ww) c -> b  hh ww c', hh=hh)
-            #     x = x + xd
-            # window reverse.
+            # window reverse
             x = x.view(
                 B, nH, nW, self.window_size, self.window_size, C
             ).transpose(

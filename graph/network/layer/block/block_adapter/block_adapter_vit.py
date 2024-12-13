@@ -62,7 +62,6 @@ class ViTAdapterBlock(nn.Module):
         self.adapter_mlp = Adapter(adapter_dim, skip_connect=False)  # MLP-block_adapter, no skip connection
         self.adapter_spatial = Adapter(adapter_dim)  # with skip connection
         self.scale = scale
-        # self.Depth_Adapter = Adapter(adapter_dim, skip_connect=False)  # no skip connection
         self.norm2 = norm_layer(dim)
         self.mlp = MLP1(embedding_dim=dim, mlp_dim=int(dim * mlp_ratio), act=act_layer)
         self.window_size = window_size
@@ -79,29 +78,15 @@ class ViTAdapterBlock(nn.Module):
         if self.window_size > 0:
             H, W = x.shape[1], x.shape[2]
             x, pad_hw = window_partition(x, self.window_size)
-        # ## 3d branch
-        # if self.args.thd:
-        #     hh, ww = x.shape[1], x.shape[2]
-        #     if self.args.chunk:
-        #         depth = self.args.chunk
-        #     else:
-        #         depth = x.shape[0]
-        #     xd = rearrange(x, '(b d) h w c -> (b h w) d c ', d=depth)
-        #     # xd = rearrange(xd, '(b d) n c -> (b n) d c', d=self.in_chans)
-        #     xd = self.norm1(xd)
-        #     dh, _ = closest_numbers(depth)
-        #     xd = rearrange(xd, 'bhw (dh dw) c -> bhw dh dw c', dh= dh)
-        #     xd = self.Depth_Adapter(self.attn(xd))
-        #     xd = rearrange(xd, '(b n) dh dw c ->(b dh dw) n c', n= hh * ww )
-        x = self.norm1(x)
-        x = self.attn(x)
-        x = self.adapter_spatial(x)
-        # if self.args.thd:
-        #     xd = rearrange(xd, 'b (hh ww) c -> b  hh ww c', hh= hh )
-        #     x = x + xd
-        # reverse window partition
-        if self.window_size > 0:
+            x = self.norm1(x)
+            x = self.attn(x)
+            x = self.adapter_spatial(x)
+            # reverse window partition
             x = window_unpartition(x, self.window_size, pad_hw, (H, W))
+        else:
+            x = self.norm1(x)
+            x = self.attn(x)
+            x = self.adapter_spatial(x)
         x = shortcut + x
         xn = self.norm2(x)
         x = x + self.mlp(xn) + self.scale * self.adapter_mlp(xn)
