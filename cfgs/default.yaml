@@ -8,11 +8,11 @@ ExpConfig:
   # multiple gpu ids to use, with null is None
   distributed: null
   # checkpoint path for pretrained model, with null is None
-  pretrain: null
+  pretrain: sam_vit_b_01ec64.pth
   # checkpoint path for trained model, with null is None
   ckpt: null
   # number of training epochs
-  epochs: 1
+  epochs: 10
   # validation frequency
   val_freq: 1
   # visualization frequency
@@ -37,9 +37,7 @@ DataConfig:
   multimask_output: 1
   # evaluation chunk:
   # 0 for 2D image, 0 or other for 3D image
-  eval_chunk: 0
-  # whether 3D image or 2D image dataset
-  is_3d: False
+  eval_chunk: null
 NetworkConfig:
   # network type: "sam", "mobile_sam_v2"
   net: "sam"

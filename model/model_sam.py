@@ -210,14 +210,14 @@ class ModelSAM(ModelBase, ABC):
         self.net.eval()
         num_val = len(val_loader)
         loss_total = 0.
-        dice_total = torch.zeros(size=self.args.DataConfig.multimask_output, dtype=torch.float32)
-        iou_total = torch.zeros(size=self.args.DataConfig.multimask_output, dtype=torch.float32)
+        dice_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
+        iou_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
         with tqdm(total=num_val, desc="Validation", unit="batch", leave=False) as pbar:
             for i, data in enumerate(val_loader):
                 images = data["image"].to(dtype=torch.float32, device=self.device)
                 labels = data["label"].to(dtype=torch.float32, device=self.device)
                 # check generated points for prompting
-                if ("point_coord" not in data) or self.args.DataConfig.is_3d:
+                if "point_coord" not in data:
                     from dataset import generate_click_prompt
                     images, point_coords, labels = generate_click_prompt(images, labels)
                 else:
@@ -294,8 +294,8 @@ class ModelSAM(ModelBase, ABC):
 
     def evaluate_results(self, mask_prd: torch.Tensor, mask_tgt: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         B, C, H, W = mask_prd.shape
-        dice_scores = torch.zeros(size=C, dtype=torch.float32)
-        iou_scores = torch.zeros(size=C, dtype=torch.float32)
+        dice_scores = torch.zeros(C, dtype=torch.float32)
+        iou_scores = torch.zeros(C, dtype=torch.float32)
         for threshold in self.args.MetricConfig.thresholds:
             mask_prd_p = (mask_prd > threshold).float()
             mask_tgt_p = (mask_tgt > threshold).float()

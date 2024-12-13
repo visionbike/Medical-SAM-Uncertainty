@@ -1,4 +1,3 @@
-from os import write
 from typing import Optional
 from pathlib import Path
 import torch
@@ -9,8 +8,6 @@ from torch.utils.tensorboard import SummaryWriter
 __all__ = [
     "visualize_images"
 ]
-
-
 
 
 def visualize_images(

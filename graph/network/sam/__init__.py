@@ -82,42 +82,43 @@ def _build_sam_model(
         pixel_std=(58.395, 57.12, 57.375),
     )
     sam_model.eval()
-    
-    checkpoint = Path(checkpoint)
-    if checkpoint.name == "sam_vit_b_01ec64.pth" and not checkpoint.exists():
-        cmd = input("Download sam_vit_b_01ec64.pth from facebook AI? [y]/n: ")
-        if len(cmd) == 0 or cmd.lower() == 'y':
-            checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            print("Downloading SAM ViT-B checkpoint...")
-            request.urlretrieve(
-                "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
-                checkpoint,
-            )
-            print(checkpoint.name, " is downloaded!")
-    elif checkpoint.name == "sam_vit_h_4b8939.pth" and not checkpoint.exists():
-        cmd = input("Download sam_vit_h_4b8939.pth from facebook AI? [y]/n: ")
-        if len(cmd) == 0 or cmd.lower() == 'y':
-            checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            print("Downloading SAM ViT-H checkpoint...")
-            request.urlretrieve(
-                "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
-                checkpoint,
-            )
-            print(checkpoint.name, " is downloaded!")
-    elif checkpoint.name == "sam_vit_l_0b3195.pth" and not checkpoint.exists():
-        cmd = input("Download sam_vit_l_0b3195.pth from facebook AI? [y]/n: ")
-        if len(cmd) == 0 or cmd.lower() == 'y':
-            checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            print("Downloading SAM ViT-L checkpoint...")
-            request.urlretrieve(
-                "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
-                checkpoint,
-            )
-            print(checkpoint.name, " is downloaded!")
+
+    if checkpoint is not None:
+        checkpoint = Path(checkpoint)
+        if checkpoint.name == "sam_vit_b_01ec64.pth" and not checkpoint.exists():
+            cmd = input("Download sam_vit_b_01ec64.pth from facebook AI? [y]/n: ")
+            if len(cmd) == 0 or cmd.lower() == 'y':
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                print("Downloading SAM ViT-B checkpoint...")
+                request.urlretrieve(
+                    "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
+                    checkpoint,
+                )
+                print(checkpoint.name, " is downloaded!")
+        elif checkpoint.name == "sam_vit_h_4b8939.pth" and not checkpoint.exists():
+            cmd = input("Download sam_vit_h_4b8939.pth from facebook AI? [y]/n: ")
+            if len(cmd) == 0 or cmd.lower() == 'y':
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                print("Downloading SAM ViT-H checkpoint...")
+                request.urlretrieve(
+                    "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
+                    checkpoint,
+                )
+                print(checkpoint.name, " is downloaded!")
+        elif checkpoint.name == "sam_vit_l_0b3195.pth" and not checkpoint.exists():
+            cmd = input("Download sam_vit_l_0b3195.pth from facebook AI? [y]/n: ")
+            if len(cmd) == 0 or cmd.lower() == 'y':
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                print("Downloading SAM ViT-L checkpoint...")
+                request.urlretrieve(
+                    "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
+                    checkpoint,
+                )
+                print(checkpoint.name, " is downloaded!")
     
     if checkpoint is not None:
         with open(checkpoint, "rb") as f:
-            state_dict = torch.load(f)
+            state_dict = torch.load(f, weights_only=True)
         # create a new state dictionary with only parameters that exist in the network
         state_dict_new = {
             k: v for k, v in state_dict.items() if k in sam_model.state_dict() and sam_model.state_dict()[k].shape == v.shape
