@@ -42,7 +42,7 @@ class IouMetric(nn.Module):
         Returns:
             (Tensor): iou scalar or tensor in shape of (C,).
         """
-        _, C, _, _ = prd.shape
+        C = prd.shape[1]
         iou_score = []
         for i in range(C):
             iou_score.append(self._iou(prd[:, i, :, :].int(), tgt[:, i, :, :].int()))

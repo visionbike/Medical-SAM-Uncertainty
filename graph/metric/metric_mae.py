@@ -15,15 +15,10 @@ class MAEMetric(nn.Module):
         Args:
             reduction (str): specifies the reduction to apply to the output: "none", "sum", "mean".
                 "none": entropy map for each channel (mask).
-            act (str): specify activation function to apply: "none", "sigmoid", "softmax".
-                "none": no activation function.
-            scale (bool): whether to apply data scaling to range [0, 1].
         """
         super().__init__()
         self.reduction = reduction
-        self.act = act
-        self.scale = scale
-        self.mae = nn.L1Loss(reduction=reduction)
+        self.mae = nn.L1Loss(reduction="none")
 
     def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
@@ -33,16 +28,15 @@ class MAEMetric(nn.Module):
         Returns:
             (Tensor): if `reduction` is "none", the same shape as the input.
         """
-        if self.act == "sigmoid":
+        C = prd.shape[1]
+
+        if torch.max(prd) > 0 or torch.min(prd) < 0:
             prd = torch.sigmoid(prd)
-        elif self.act == "softmax":
-            prd = torch.softmax(prd, dim=1)
 
         x = self.mae(prd, tgt)
 
-        if self.scale:
-            if self.reduction == "none":
-                x = (x - x.amin(dim=(-1, -2), keepdim=True)) / (x.amax(dim=(-1, -2), keepdim=True) - x.amin(dim=(-1, -2), keepdim=True))
-            else:
-                x = (x - x.min()) / (x.max() - x.min())
+        if self.reduction == "mean":
+            return x.mean(dim=(2, 3))
+        elif self.reduction == "sum":
+            return x.sum(dim=(2, 3))
         return x

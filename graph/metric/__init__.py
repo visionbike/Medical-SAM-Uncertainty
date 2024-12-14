@@ -27,7 +27,7 @@ def get_metric(name: str) -> Any:
         return MAEMetric(reduction="none", act="sigmoid", scale=True)
     elif name == "entropy":
         from .metric_entropy import EntropyMetric
-        return EntropyMetric(reduction="none", act="sigmoid", scale=True)
+        return EntropyMetric(reduction="none")
     else:
         print("The metric is not supported now !")
         return None

@@ -10,19 +10,14 @@ class EntropyMetric(nn.Module):
     The implementation of entropy metric of each tensor's channel.
     """
 
-    def __init__(self, reduction: str = "none", act: str = "none", scale: bool = False) -> None:
+    def __init__(self, reduction: str = "none") -> None:
         """
         Args:
             reduction (str): specifies the reduction to apply to the output: "none", "sum", "mean".
                 "none": entropy map for each channel (mask).
-            act (str): specify activation function to apply: "none", "sigmoid", "softmax".
-                "none": no activation function.
-            scale (bool): whether to apply data scaling to range [0, 1].
         """
         super().__init__()
         self.reduction = reduction
-        self.act = act
-        self.scale = scale
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -31,21 +26,17 @@ class EntropyMetric(nn.Module):
         Returns:
             (Tensor): if `reduction` is "none", the same shape as the input.
         """
-        if self.act == "sigmoid":
+        C = x.shape[1]
+
+        if torch.max(x) > 0 or torch.min(x) < 0:
             x = torch.sigmoid(x)
-        elif self.act == "softmax":
-            x = torch.softmax(x, dim=1)
 
-        if self.reduction == "none":
-            x = -(x * torch.log(x))
+        # get entropy
+        x = -x * torch.log(x)
+        for i in range(C):
+            x[:, i, :, :] = (x[:, i, :, :] - x[:, i, :, :].min()) / (x[:, i, :, :].max() - x[:, i, :, :].min())
+        if self.reduction == "mean":
+            return x.mean(dim=(2, 3))
         elif self.reduction == "sum":
-            x = -torch.sum(x * torch.log(x), dim=1)
-        elif self.reduction == "mean":
-            x = -torch.mean(x * torch.log(x), dim=1)
-
-        if self.scale:
-            if self.reduction == "none":
-                x = (x - x.amin(dim=(-1, -2), keepdim=True)) / (x.amax(dim=(-1, -2), keepdim=True) - x.amin(dim=(-1, -2), keepdim=True))
-            else:
-                x = (x - x.min()) / (x.max() - x.min())
+            return x.sum(dim=(2, 3))
         return x

@@ -69,7 +69,7 @@ class DiceCoeffMetric(nn.Module):
         Returns:
             (Tensor): dice coefficient scalar or tensor in shape of (C,).
         """
-        _, C, _, _ = prd.shape
+        C = prd.shape[1]
         dice_coeff = []
         for i in range(C):
             dice_coeff.append(self._dice_coeff(prd[:, i, :, :], tgt[:, i, :, :]))

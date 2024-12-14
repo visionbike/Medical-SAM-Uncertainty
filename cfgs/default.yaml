@@ -1,6 +1,6 @@
 ExpConfig:
   # experimental name
-  exp_name: "sam_isic_1024"
+  exp_name: "sam_isic"
   # whether to use gpu
   use_gpu: True
   # which gpu device to use
