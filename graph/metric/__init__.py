@@ -24,7 +24,7 @@ def get_metric(name: str) -> Any:
         return IouMetric(reduction="none")
     elif name == "mae":
         from .metric_mae import MAEMetric
-        return MAEMetric(reduction="none", act="sigmoid", scale=True)
+        return MAEMetric(reduction="none")
     elif name == "entropy":
         from .metric_entropy import EntropyMetric
         return EntropyMetric(reduction="none")
