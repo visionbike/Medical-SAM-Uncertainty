@@ -1,8 +1,11 @@
 from typing import Optional
 from pathlib import Path
+import numpy as np
+import cv2
 import torch
 import torchvision.utils as vultils
 import torchvision.transforms as vfn
+import torchvision.transforms.v2 as vtf2
 from torch.utils.tensorboard import SummaryWriter
 
 __all__ = [
@@ -39,13 +42,22 @@ def visualize_images(
     """
     file_path = save_path / (f"{prefix}_{filename}.jpg" if prefix is not None else f"{filename}.jpg")
     B, C, H, W = mask_prd.shape
-    if image.shape[2] != mask_prd.shape[2]:
-        image = vfn.Resize((H, W))(image)
     # number of visualized images
     num_rows = min(B, 4)
 
+    transform = vtf2.Compose([vtf2.ToImage(), vtf2.ToDtype(torch.float32, scale=True)])
+
+    if image.shape[2] != mask_prd.shape[2]:
+        image = vfn.Resize((H, W))(image)
+
     if torch.max(mask_prd) > 1 or torch.min(mask_prd) < 0:
         mask_prd = torch.sigmoid(mask_prd)
+
+    if torch.max(map_entropy) > 1 or torch.min(map_entropy) < 0:
+        map_entropy = torch.sigmoid(map_entropy)
+
+    if torch.max(map_mae) > 1 or torch.min(map_mae) < 0:
+        map_mae = torch.sigmoid(map_mae)
 
     if reverse:
         mask_prd = 1. - mask_prd
@@ -60,14 +72,32 @@ def visualize_images(
         mask_prds.append(mask_prd[: num_rows, i, :, :].unsqueeze(1).expand(B, 3, H, W))
         mask_tgts.append(mask_tgt[: num_rows, i, :, :].unsqueeze(1).expand(B, 3, H, W))
         if map_entropy is not None:
-            map_entropies.append(map_entropy[: num_rows, i, :, :].unsqueeze(1).expand(B, 3, H, W))
+            map_batches = []
+            for r in range(num_rows):
+                map_vis = np.expand_dims(map_entropy[r, i, :, :].numpy(), axis=-1)
+                map_vis = (255 * map_vis).astype(np.uint8)
+                map_vis = cv2.applyColorMap(map_vis, cv2.COLORMAP_PLASMA)
+                map_vis = cv2.cvtColor(map_vis, cv2.COLOR_BGR2RGB)
+                map_vis =  transform(map_vis)
+                map_batches.append(map_vis)
+            map_batches = torch.stack(map_batches, dim=0)
+            map_entropies.append(map_batches)
         if map_mae is not None:
-            map_maes.append(map_mae[: num_rows, i, :, :].unsqueeze(1).expand(B, 3, H, W))
+            map_batches = []
+            for r in range(num_rows):
+                map_vis = np.expand_dims(map_mae[r, i, :, :].numpy(), axis=-1)
+                map_vis = (255 * map_vis).astype(np.uint8)
+                map_vis = cv2.applyColorMap(map_vis, cv2.COLORMAP_PLASMA)
+                map_vis = cv2.cvtColor(map_vis, cv2.COLOR_BGR2RGB)
+                map_vis =  transform(map_vis)
+                map_batches.append(map_vis)
+            map_batches = torch.stack(map_batches, dim=0)
+            map_maes.append(map_batches)
     compose = [image[: num_rows, :, :]] + mask_tgts + mask_prds
     if map_entropy is not None:
-        compose += map_maes
-    if map_mae is not None:
         compose += map_entropies
+    if map_mae is not None:
+        compose += map_maes
     compose = torch.cat(compose, dim=0)
     if writer is not None:
         writer.add_images("Visualization", compose, dataformats="NCHW")
