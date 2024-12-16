@@ -2,7 +2,7 @@ from typing import Tuple, Type, Set, Optional
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from timm.models.layers import trunc_normal_
+from timm.layers import trunc_normal_
 from ..layer import (
     PatchEmbed2,
     LayerNorm2d,

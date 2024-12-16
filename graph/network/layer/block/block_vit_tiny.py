@@ -2,7 +2,7 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as fn
-from timm.models.layers import DropPath
+from timm.layers import DropPath
 from ..attention import LeViTAttention
 from ..conv import Conv2dBN
 from ..mlp import MLP3

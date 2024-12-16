@@ -1,7 +1,7 @@
 from typing import Type
 import torch
 import torch.nn as nn
-from timm.models.layers import DropPath
+from timm.layers import DropPath
 from .conv2d_bn import Conv2dBN
 
 __all__ = [

@@ -1,7 +1,7 @@
 from typing import Tuple, Type
 import torch.nn as nn
 import torch.nn.functional as fn
-from timm.models.layers import DropPath
+from timm.layers import DropPath
 from ...conv import Conv2dBN
 from ...lora import LoRALeViTAttention2, LoRAMLP4
 
