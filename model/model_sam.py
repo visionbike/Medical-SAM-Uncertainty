@@ -47,7 +47,7 @@ class ModelSAM(ModelBase, ABC):
 
         for epoch in range(self.args.ExpConfig.epochs):
             if epoch and epoch < 5:
-                self.validate(epoch, dataset, val_loader, logger, do_writer=False)
+                self.validate(epoch, dataset, val_loader, logger, do_writer=False, is_vis=False)
 
             time_start = time.time()
             loss = self.train_epoch(epoch, train_loader)
@@ -56,8 +56,8 @@ class ModelSAM(ModelBase, ABC):
             print(f"Training time: {time_end - time_start}")
             self.writer_train.add_scalar("Loss", loss, epoch)
 
-            if epoch and epoch % self.args.ExpConfig.val_freq == 0 or epoch == self.args.ExpConfig.epochs - 1:
-                loss_val, dice_val, iou_val = self.validate(epoch, dataset, val_loader, logger, do_writer=False)
+            if epoch and (epoch % self.args.ExpConfig.val_freq == 0 or epoch == self.args.ExpConfig.epochs - 1):
+                loss_val, dice_val, iou_val = self.validate(epoch, dataset, val_loader, logger, do_writer=False, is_vis=True)
                 self.writer_val.add_scalar("Loss", loss_val, epoch)
                 self.writer_val.add_scalar("Dice", dice_val, epoch)
                 self.writer_val.add_scalar("IOU", iou_val, epoch)
@@ -86,13 +86,12 @@ class ModelSAM(ModelBase, ABC):
         self.writer_train.close()
         self.writer_val.close()
 
-    def validate(self, epoch: int, dataset: str, val_loader: DataLoader, logger: Logger, do_writer: bool = False) -> Tuple[torch.Tensor, ...]:
-        self.net.eval()
-        loss, dice_scores, iou_scores = self.validate_epoch(epoch, val_loader)
+    def validate(self, epoch: int, dataset: str, val_loader: DataLoader, logger: Logger, do_writer: bool = False, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
+        loss, dice_scores, iou_scores = self.validate_epoch(epoch, val_loader, is_vis)
         if dataset == "refuge":
-            logger.info(f"Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]} || @ epoch {epoch}.")
+            logger.info(f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]} || @ epoch {epoch}.")
         else:
-            logger.info(f"Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores} || @ epoch {epoch}.")
+            logger.info(f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores} || @ epoch {epoch}.")
         dice_mean = dice_scores.mean()
         iou_mean = iou_scores.mean()
         if do_writer:
@@ -203,10 +202,10 @@ class ModelSAM(ModelBase, ABC):
                 #     )
 
                 pbar.update()
-        return loss.item()
-        # return loss_epoch / num_train
+        # return loss.item()
+        return loss_epoch / num_train
 
-    def validate_epoch(self, epoch: int, val_loader: DataLoader, ) -> Tuple[torch.Tensor, ...]:
+    def validate_epoch(self, epoch: int, val_loader: DataLoader, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
         self.net.eval()
         num_val = len(val_loader)
         loss_total = 0.
@@ -225,70 +224,55 @@ class ModelSAM(ModelBase, ABC):
                     point_labels = data["point_label"]
                 name = data["filename"][0]
 
-                buoy = 0
-                if self.args.DataConfig.eval_chunk:
-                    eval_chunk = int(self.args.DataConfig.eval_chunk)
-                else:
-                    eval_chunk = int(images.size(-1))
+                if point_labels.clone().flatten()[0] != -1:
+                    point_coords_torch = torch.as_tensor(point_coords, dtype=torch.float, device=self.device)
+                    point_labels_torch = torch.as_tensor(point_labels, dtype=torch.int, device=self.device)
+                    if len(point_labels.shape) == 1:
+                        # only one point prompt
+                        point_coords_torch, point_labels_torch = point_coords_torch[None, :, :], point_labels_torch[None, :]
+                    point_coords = (point_coords_torch, point_labels_torch)
 
-                while (buoy + eval_chunk) <= images.size(-1):
-                    images_ = images[..., buoy: buoy + eval_chunk]
-                    labels_ = labels[..., buoy: buoy + eval_chunk]
-                    buoy += eval_chunk
+                with torch.no_grad():
+                    embed_image = self.net.image_encoder(images)
+                    if self.args.NetworkConfig.net in ["sam", "mobile_sam_v2"]:
+                        embed_sparse, embed_dense = self.net.prompt_encoder(
+                            points=point_coords,
+                            boxes=None,
+                            masks=None
+                        )
 
-                    i += 1
-                    if point_labels.clone().flatten()[0] != -1:
-                        point_coords_torch = torch.as_tensor(point_coords, dtype=torch.float, device=self.device)
-                        point_labels_torch = torch.as_tensor(point_labels, dtype=torch.int, device=self.device)
-                        if len(point_labels.shape) == 1:
-                            # only one point prompt
-                            point_coords_torch, point_labels_torch = point_coords_torch[None, :, :], point_labels_torch[None, :]
-                        point_coords = (point_coords_torch, point_labels_torch)
+                        preds_, _ = self.net.mask_decoder(
+                            image_embeddings=embed_image,
+                            image_pe=self.net.prompt_encoder.get_dense_pe(),
+                            sparse_prompt_embeddings=embed_sparse,
+                            dense_prompt_embeddings=embed_dense,
+                            multimask_output=(self.args.DataConfig.multimask_output > 1),
+                        )
 
-                    with torch.no_grad():
-                        embed_image = self.net.image_encoder(images_)
-                        if self.args.NetworkConfig.net in ["sam", "mobile_sam_v2"]:
-                            embed_sparse, embed_dense = self.net.prompt_encoder(
-                                points=point_coords,
-                                boxes=None,
-                                masks=None
-                            )
+                    # resize to the ordered output size
+                    preds = fn.interpolate(preds_, size=(self.args.DataConfig.output_size, self.args.DataConfig.output_size))
+                    loss_total += self.criterion(preds, labels)
 
-                            preds_, _ = self.net.mask_decoder(
-                                image_embeddings=embed_image,
-                                image_pe=self.net.prompt_encoder.get_dense_pe(),
-                                sparse_prompt_embeddings=embed_sparse,
-                                dense_prompt_embeddings=embed_dense,
-                                multimask_output=(self.args.DataConfig.multimask_output > 1),
-                            )
-
-                        # resize to the ordered output size
-                        preds_ = fn.interpolate(preds_, size=(self.args.DataConfig.output_size, self.args.DataConfig.output_size))
-                        loss_total += self.criterion(preds_, labels_)
-
-                        # compute metrics
-                        dice_scores, iou_scores, entropies, maes = self.evaluate_results(preds_, labels_)
-                        dice_total += dice_scores
-                        iou_total += iou_scores
+                    # compute metrics
+                    dice_scores, iou_scores, entropies, maes = self.evaluate_results(preds, labels)
+                    dice_total += dice_scores
+                    iou_total += iou_scores
 
                 pbar.update()
             # visual image
-            if self.args.ExpConfig.vis_freq and i % self.args.ExpConfig.vis_freq == 0:
+            if is_vis and self.args.ExpConfig.vis_freq and i % self.args.ExpConfig.vis_freq == 0:
                 visualize_images(
-                    images_,
-                    labels_,
-                    preds_,
-                    entropies,
-                    maes,
+                    images.detach().cpu(),
+                    labels.detach().cpu(),
+                    preds.detach().cpu(),
+                    entropies.detach().cpu(),
+                    maes.detach().cpu(),
                     save_path=Path(self.log_paths["path_sample"]),
                     filename=f"{name}_epoch_{epoch}",
                     prefix="val",
                     writer=self.writer_val,
                     reverse=False
                 )
-
-        if self.args.DataConfig.eval_chunk:
-            num_val *= (images.size(-1) // eval_chunk)
 
         return loss_total / num_val, dice_total / num_val, iou_total / num_val
 

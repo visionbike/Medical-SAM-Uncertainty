@@ -10,7 +10,7 @@ class MAEMetric(nn.Module):
     The implementation of entropy metric of each tensor's channel.
     """
 
-    def __init__(self, reduction: str = "none", act: str = "none", scale: bool = False) -> None:
+    def __init__(self, reduction: str = "none") -> None:
         """
         Args:
             reduction (str): specifies the reduction to apply to the output: "none", "sum", "mean".
@@ -28,8 +28,6 @@ class MAEMetric(nn.Module):
         Returns:
             (Tensor): if `reduction` is "none", the same shape as the input.
         """
-        C = prd.shape[1]
-
         if torch.max(prd) > 0 or torch.min(prd) < 0:
             prd = torch.sigmoid(prd)
 

@@ -32,7 +32,8 @@ class IouMetric(nn.Module):
 
         inter = (prd & tgt).sum((1, 2))
         union = (prd | tgt).sum((1, 2))
-        return (inter + self.eps) / (union + self.eps)
+        iou = (inter + self.eps) / (union + self.eps)
+        return iou.mean()
 
     def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
@@ -43,10 +44,10 @@ class IouMetric(nn.Module):
             (Tensor): iou scalar or tensor in shape of (C,).
         """
         C = prd.shape[1]
-        iou_score = []
+        iou_scores = []
         for i in range(C):
-            iou_score.append(self._iou(prd[:, i, :, :].int(), tgt[:, i, :, :].int()))
-        iou_score = torch.tensor(iou_score).float()
+            iou_scores.append(self._iou(prd[:, i, :, :].int(), tgt[:, i, :, :].int()))
+        iou_score = torch.tensor(iou_scores).float()
         if self.reduction == "mean":
             return iou_score.mean()
         elif self.reduction == "sum":
