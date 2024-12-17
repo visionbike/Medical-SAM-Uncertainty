@@ -46,8 +46,8 @@ class ModelSAM(ModelBase, ABC):
         loss_best = 1e4
 
         for epoch in range(self.args.ExpConfig.epochs):
-            if epoch and epoch < 5:
-                self.validate(epoch, dataset, val_loader, logger, do_writer=False, is_vis=False)
+            if epoch < 5:
+                self.validate(epoch, dataset, val_loader, logger, is_vis=False)
 
             time_start = time.time()
             loss = self.train_epoch(epoch, train_loader)
@@ -56,11 +56,12 @@ class ModelSAM(ModelBase, ABC):
             print(f"Training time: {time_end - time_start}")
             self.writer_train.add_scalar("Loss", loss, epoch)
 
-            if epoch and (epoch % self.args.ExpConfig.val_freq == 0 or epoch == self.args.ExpConfig.epochs - 1):
-                loss_val, dice_val, iou_val = self.validate(epoch, dataset, val_loader, logger, do_writer=False, is_vis=True)
+            if self.args.ExpConfig.val_freq and (epoch % self.args.ExpConfig.val_freq == 0 or epoch == self.args.ExpConfig.epochs - 1):
+                loss_val, dice_val, iou_val, corr_val = self.validate(epoch, dataset, val_loader, logger, is_vis=True)
                 self.writer_val.add_scalar("Loss", loss_val, epoch)
                 self.writer_val.add_scalar("Dice", dice_val, epoch)
                 self.writer_val.add_scalar("IOU", iou_val, epoch)
+                self.writer_val.add_scalar("Corr", corr_val, epoch)
 
                 if dice_val > dice_best:
                     loss_best = loss_val
@@ -86,20 +87,18 @@ class ModelSAM(ModelBase, ABC):
         self.writer_train.close()
         self.writer_val.close()
 
-    def validate(self, epoch: int, dataset: str, val_loader: DataLoader, logger: Logger, do_writer: bool = False, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
-        loss, dice_scores, iou_scores = self.validate_epoch(epoch, val_loader, is_vis)
+    def validate(self, epoch: int, dataset: str, val_loader: DataLoader, logger: Logger, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
+        loss, dice_scores, iou_scores, corr_scores = self.validate_epoch(epoch, val_loader, is_vis)
         if dataset == "refuge":
-            logger.info(f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]} || @ epoch {epoch}.")
+            logger.info(
+                f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]}, CORR_DISC: {corr_scores[0]}, CORR_CUP: {corr_scores[1]} || @ epoch {epoch}."
+            )
         else:
-            logger.info(f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores} || @ epoch {epoch}.")
+            logger.info(f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores}, CORR: {corr_scores} || @ epoch {epoch}.")
         dice_mean = dice_scores.mean()
         iou_mean = iou_scores.mean()
-        if do_writer:
-            self.writer_val.add_scalar("Loss", loss.item(), epoch)
-            self.writer_val.add_scalar("Dice", dice_mean.item(), epoch)
-            self.writer_val.add_scalar("IOU", iou_mean.item(), epoch)
-            self.writer_val.close()
-        return loss.item(), dice_mean.item(), iou_mean.item()
+        corr_mean = corr_scores.mean()
+        return loss.item(), dice_mean.item(), iou_mean.item(), corr_mean.item()
 
     def train_epoch(self, epoch: int, train_loader: DataLoader) -> torch.Tensor:
         self.net.train()
@@ -189,18 +188,6 @@ class ModelSAM(ModelBase, ABC):
 
                 self.optimizer.zero_grad()
 
-                # visual image
-                # if self.args.ExpConfig.vis_freq and i % self.args.ExpConfig.vis_freq == 0:
-                #     visualize_images(
-                #         images,
-                #         labels,
-                #         preds,
-                #         save_path=Path(self.log_paths["path_sample"]),
-                #         filename=f"{name}_epoch_{epoch}",
-                #         prefix="train",
-                #         reverse=False
-                #     )
-
                 pbar.update()
         # return loss.item()
         return loss_epoch / num_train
@@ -211,6 +198,7 @@ class ModelSAM(ModelBase, ABC):
         loss_total = 0.
         dice_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
         iou_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
+        corr_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
         with tqdm(total=num_val, desc="Validation", unit="batch", leave=False) as pbar:
             for i, data in enumerate(val_loader):
                 images = data["image"].to(dtype=torch.float32, device=self.device)
@@ -254,9 +242,10 @@ class ModelSAM(ModelBase, ABC):
                     loss_total += self.criterion(preds, labels)
 
                     # compute metrics
-                    dice_scores, iou_scores, entropies, maes = self.evaluate_results(preds, labels)
+                    dice_scores, iou_scores, entropies, maes, corr_scores = self.evaluate_results(preds, labels)
                     dice_total += dice_scores
                     iou_total += iou_scores
+                    corr_total += corr_scores
 
                 pbar.update()
             # visual image
@@ -274,7 +263,7 @@ class ModelSAM(ModelBase, ABC):
                     reverse=False
                 )
 
-        return loss_total / num_val, dice_total / num_val, iou_total / num_val
+        return loss_total / num_val, dice_total / num_val, iou_total / num_val, corr_scores / num_val
 
     def evaluate_results(self, mask_prd: torch.Tensor, mask_tgt: torch.Tensor) -> Tuple[torch.Tensor, ...]:
         B, C, H, W = mask_prd.shape
@@ -290,8 +279,9 @@ class ModelSAM(ModelBase, ABC):
 
         entropies = self.metrics["entropy"](mask_prd)
         maes = self.metrics["mae"](mask_prd, mask_tgt)
+        corr_scores = self.metrics["corr_coeff"](entropies, maes)
 
-        return iou_scores, dice_scores, entropies, maes
+        return iou_scores, dice_scores, entropies, maes, corr_scores
 
     def save_checkpoint(self, state: Dict, is_best: bool, filename: str = "checkpoint.pth") -> None:
         torch.save(state, (Path(self.log_paths["path_ckpt"]) / filename))

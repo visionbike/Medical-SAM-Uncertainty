@@ -84,7 +84,9 @@ def _build_sam_model(
     sam_model.eval()
 
     if checkpoint is not None:
-        checkpoint = Path(checkpoint)
+        if type(checkpoint) is str:
+            checkpoint = Path(checkpoint)
+
         if checkpoint.name == "sam_vit_b_01ec64.pth" and not checkpoint.exists():
             cmd = input("Download sam_vit_b_01ec64.pth from facebook AI? [y]/n: ")
             if len(cmd) == 0 or cmd.lower() == 'y':
@@ -115,8 +117,7 @@ def _build_sam_model(
                     checkpoint,
                 )
                 print(checkpoint.name, " is downloaded!")
-    
-    if checkpoint is not None:
+
         with open(checkpoint, "rb") as f:
             state_dict = torch.load(f, weights_only=True)
         # create a new state dictionary with only parameters that exist in the network

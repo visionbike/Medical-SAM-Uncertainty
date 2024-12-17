@@ -1,6 +1,4 @@
 ExpConfig:
-  # experimental name
-  exp_name: "sam_isic"
   # whether to use gpu
   use_gpu: True
   # which gpu device to use
@@ -14,7 +12,7 @@ ExpConfig:
   # number of training epochs
   epochs: 10
   # validation frequency
-  val_freq: 1
+  val_freq: 5
   # visualization frequency
   vis_freq: 1
 DataConfig:
@@ -35,9 +33,6 @@ DataConfig:
   # the number of mask outputs for multi-class segmentation:
   # 1 for ISIC dataset, 2 for REFUGE dataset, other for BTCV dataset
   multimask_output: 1
-  # evaluation chunk:
-  # 0 for 2D image, 0 or other for 3D image
-  eval_chunk: null
 NetworkConfig:
   # network type: "sam", "mobile_sam_v2"
   net: "sam"
@@ -59,6 +54,6 @@ LossConfig:
   # criterion name: "bce_w_logit", "dice"
   loss: "bce_w_logit"
 MetricConfig:
-  # metric names: "dice", "dice_coeff "mae", "entropy", "iou"
-  metrics: ["dice_coeff", "iou", "mae", "entropy"]
+  # metric names: "dice", "dice_coeff "mae", "entropy", "iou", "corr_coeff"
+  metrics: ["dice_coeff", "iou", "mae", "entropy", "corr_coeff"]
   thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
