@@ -1,5 +1,3 @@
-from typing import Any
-
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
@@ -70,12 +68,12 @@ class DiceCoeffMetric(nn.Module):
             (Tensor): dice coefficient scalar or tensor in shape of (C,).
         """
         C = prd.shape[1]
-        dice_coeff = []
+        dice_coeffs = []
         for i in range(C):
-            dice_coeff.append(self._dice_coeff(prd[:, i, :, :], tgt[:, i, :, :]))
-        dice_coeff = torch.tensor(dice_coeff).float()
+            dice_coeffs.append(self._dice_coeff(prd[:, i, :, :], tgt[:, i, :, :]))
+        dice_coeffs = torch.tensor(dice_coeffs).float()
         if self.reduction == "mean":
-            return dice_coeff.mean()
+            return dice_coeffs.mean()
         elif self.reduction == "sum":
-            return dice_coeff.sum()
-        return dice_coeff
+            return dice_coeffs.sum()
+        return dice_coeffs

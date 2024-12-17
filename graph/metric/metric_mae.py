@@ -18,7 +18,6 @@ class MAEMetric(nn.Module):
         """
         super().__init__()
         self.reduction = reduction
-        self.mae = nn.L1Loss(reduction="none")
 
     def forward(self, prd: torch.Tensor, tgt: torch.Tensor) -> torch.Tensor:
         """
@@ -31,7 +30,7 @@ class MAEMetric(nn.Module):
         if torch.max(prd) > 0 or torch.min(prd) < 0:
             prd = torch.sigmoid(prd)
 
-        x = self.mae(prd, tgt)
+        x = torch.abs(prd - tgt)
 
         if self.reduction == "mean":
             return x.mean(dim=(2, 3))

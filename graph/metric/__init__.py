@@ -28,6 +28,9 @@ def get_metric(name: str) -> Any:
     elif name == "entropy":
         from .metric_entropy import EntropyMetric
         return EntropyMetric(reduction="none")
+    elif name == "corr_coeff":
+        from .metric_correcoeff import CorrCoeffMetric
+        return CorrCoeffMetric(num_steps=100, reduction="none")
     else:
         print("The metric is not supported now !")
         return None
