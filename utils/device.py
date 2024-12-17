@@ -22,7 +22,6 @@ def get_device(
         (device): PyTorch device.
     """
     if use_gpu:
-        torch.backends.cudnn.benchmark = True
         if distributed is not None:
             device_ids = [int(i) for i in distributed.split(",")]
             return torch.device("cuda", device_ids[0]), device_ids

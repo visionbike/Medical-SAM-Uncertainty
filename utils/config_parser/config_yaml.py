@@ -1,9 +1,8 @@
 from types import NoneType
 from typing import Any, List, Optional
 from argparse import Namespace
-import shutil
 from abc import ABC
-from pathlib import Path
+from pathlib import Path, PosixPath
 import torch
 from yacs.config import CfgNode as cn
 from .config_base import *
@@ -88,6 +87,11 @@ class ConfigYAML(ConfigBase, ABC):
 
         cfgs.NetworkConfig.image_size = cfgs.DataConfig.image_size
         cfgs.NetworkConfig.multimask_output = cfgs.DataConfig.multimask_output
+        if cfgs.ExpConfig.pretrain is not None:
+            Path("pretrain_models").mkdir(parents=True, exist_ok=True)
+            cfgs.ExpConfig.pretrain =f"pretrain_models/{cfgs.ExpConfig.pretrain}"
+
+        cfgs.ExpConfig.exp_name = f"{cfgs.DataConfig.dataset}_{cfgs.NetworkConfig.net}_{cfgs.NetworkConfig.block}_{cfgs.DataConfig.image_size}"
         # # initiate experiment configs
         # exp_tags = []    # tags
         # exp_name = ""    # exp name
