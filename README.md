@@ -9,13 +9,15 @@ pip install -r requirements.txt
 - Download ISIC dataset
 
 ```shell
-sh scripts/download_dataset.sh ISIC2016
+chmod +x scripts/download_dataset.sh
+bash scripts/download_dataset.sh ISIC2016
 ```
 
 - Download REFUGE dataset
 
 ```shell
-sh scripts/download_dataset.sh REFUGE
+chmod +x scripts/download_dataset.sh 
+bash scripts/download_dataset.sh REFUGE
 ```
 
 ### Train SAM model
