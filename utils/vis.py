@@ -41,7 +41,7 @@ def visualize_images(
         reverse (bool): whether to make reversed-value map.
     """
     file_path = save_path / (f"{prefix}_{filename}.jpg" if prefix is not None else f"{filename}.jpg")
-    B, C, H, W = mask_prd.shape
+    B, C, H, W = mask_tgt.shape
     # number of visualized images
     num_rows = min(B, 4)
 
@@ -58,6 +58,12 @@ def visualize_images(
 
     if torch.max(map_mae) > 1 or torch.min(map_mae) < 0:
         map_mae = torch.sigmoid(map_mae)
+
+    if map_entropy.isnan().any():
+        map_entropy = map_entropy.nan_to_num()
+
+    if map_mae.isnan().any():
+        map_mae = map_mae.nan_to_num()
 
     if reverse:
         mask_prd = 1. - mask_prd
