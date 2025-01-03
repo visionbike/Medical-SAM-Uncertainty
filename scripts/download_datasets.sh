@@ -2,7 +2,7 @@ NAME=$1
 
 # Load ISIC 2016 dataset
 if [ "$NAME" == "ISIC2016" ]; then
-  mkdir -p ./data/"$NAME"
+  mkdir -p "./data/$NAME"
 
   ZIP_FILENAME="ISBI2016_ISIC_Part1_Training_Data"
   if [ ! -e "$ZIP_FILENAME.zip" ]; then
@@ -61,4 +61,47 @@ elif [ "$NAME" == "REFUGE" ]; then
   unzip "$FILENAME.zip" -d "./data"
   rm "$FILENAME.zip"
   rm -rf "./data/_MACOSX"
+
+# Download DDTI dataset
+elif [ "$NAME" == "DDTI" ]; then
+  FILENAME="thyroidultrasound"
+  if [ ! -e "$FILENAME.zip" ]; then
+    echo "Downloading $FILENAME.zip..."
+    kaggle datasets download "eiraoi/$FILENAME"
+  fi
+  unzip "$FILENAME.zip" -d "./data/$NAME"
+  rm "$FILENAME.zip"
+
+# Download STARE dataset
+elif [ "$NAME" == "STARE" ]; then
+  mkdir -p "./data/$NAME/images"
+  IMAGE_FILENAME="stare-images"
+  if [ ! -e "$IMAGE_FILENAME.tar" ]; then
+    echo "Downloading $IMAGE_FILENAME.tar..."
+    URL="https://cecas.clemson.edu/~ahoover/stare/probing/$IMAGE_FILENAME.tar"
+    wget -N "$URL" -O "$IMAGE_FILENAME.tar"
+  fi
+  tar -xf "$IMAGE_FILENAME.tar" -C "./data/$NAME/images"
+  for file in "./data/$NAME/images"/*; do
+    if [ -f "$file" ]; then
+        gzip -d "$file"
+    fi
+  done
+
+  mkdir -p "./data/$NAME/labels"
+  LABEL_FILENAME="labels-ah"
+  if [ ! -e "$LABEL_FILENAME.tar" ]; then
+    echo "Downloading $LABEL_FILENAME.tar..."
+    URL="https://cecas.clemson.edu/~ahoover/stare/probing/$LABEL_FILENAME.tar"
+    wget -N "$URL" -O "$LABEL_FILENAME.tar"
+  fi
+  tar -xf "$LABEL_FILENAME.tar" -C "./data/$NAME/labels"
+  for file in "./data/$NAME/labels"/*; do
+    if [ -f "$file" ]; then
+        gzip -d "$file"
+    fi
+  rm -f
+  done
+  rm "$IMAGE_FILENAME.tar"
+  rm "$LABEL_FILENAME.tar"
 fi
