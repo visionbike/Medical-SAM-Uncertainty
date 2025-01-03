@@ -1,6 +1,5 @@
 from typing import Optional, Callable, Dict
 from pathlib import Path
-import fireducks.pandas as pd
 import numpy as np
 import cv2
 import torch
@@ -8,19 +7,18 @@ from torch.utils.data import Dataset
 from .utils import *
 
 __all__ = [
-    "ISIC2016"
+    "DDTI"
 ]
 
 
-class ISIC2016(Dataset):
+class DDTI(Dataset):
     """
-    ISIC Dataset ver. 2016 for Melanoma Segmentation from Skin Images (2D).
-    Link: https://challenge.isic-archive.com/data/
+    DDTI Dataset for Thyroid Ultrasound Images (2D).
+    Link: https://www.kaggle.com/datasets/dasmehdixtr/ddti-thyroid-ultrasound-images/data
     """
     def __init__(
         self,
         path: str,
-        mode: str,
         prompt: str = "click",
         image_size: int = 1024,
         transform: Optional[Callable] = None,
@@ -28,29 +26,25 @@ class ISIC2016(Dataset):
     ) -> None:
         """
         Args:
-            path(str): data path.
-            mode (str): mode for loading training or testing dataset.
+            path (str): data path.
             prompt (str): prompt types, including
                 "none": no applying prompt.
                 "click": applying click prompt.
                 "box": applying bbox prompt.
             image_size (int): input image size.
             transform (Callable): transform functions for image.
-            transform_mask: transform function for mask.
+            transform_mask (Callable): transform function for mask.
         """
         super().__init__()
-        df = pd.read_csv(Path(path, f"ISBI2016_ISIC_Part1_{mode}_GroundTruth.csv"), encoding="gbk")
-        self.list_images = df.iloc[:, 1].tolist()
-        self.list_labels = df.iloc[:, 2].tolist()
-        self.path_data = path
-        self.mode = mode
+        self.path = path
+        self.names = [f.name[:-4] for f in sorted(Path(path, f"p_image").iterdir()) if f.is_file()]
         self.prompt = prompt
         self.image_size = image_size
         self.transform = transform
         self.transform_mask = transform_mask
 
     def __len__(self) -> int:
-        return len(self.list_images)
+        return len(self.names)
 
     def __getitem__(self, idx: int) -> Dict:
         """
@@ -59,16 +53,38 @@ class ISIC2016(Dataset):
         Returns:
             (Dict): image, ground truth (mask), prompt data and related metadata.
         """
-        # read image and label (mask)
-        image = cv2.imread(f"{self.path_data}/{self.list_images[idx]}")
+        # read image and labels (masks) which are evaluated by different subjects
+        image = cv2.imread(f"{self.path}/p_image/{self.names[idx]}.PNG")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = cv2.imread(f"{self.path_data}/{self.list_labels[idx]}", cv2.IMREAD_GRAYSCALE)
+        label = cv2.imread(f"{self.path}/p_mask/{self.names[idx]}.PNG", cv2.IMREAD_GRAYSCALE)
         # resize the label's resolution as same as image's
         label = cv2.resize(label, (self.image_size, self.image_size))
         # get click points
-        point_label, point_coord = 1, np.array([0, 0], np.int32)
+        point_coord, point_label = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
-            point_label, point_coord = random_click(label / 255., point_labels=1)
+            point_coord, point_label = [], []
+            # find large enough connected components as the mask
+            label = np.clip(label, 0, 1)
+            num_labels, labels = cv2.connectedComponents(label.astype(np.uint8))
+            for label_ in range(1, num_labels):
+                component_mask = np.where(labels == label_, 1, 0)
+                area = np.sum(component_mask)
+
+                if area > 400:
+                    random_label, random_point = random_click(component_mask)
+                    point_coord.append(random_point)
+                    point_label.append(random_label)
+
+            if len(point_coord) == 1:
+                point_coord.append(point_coord[0])
+                point_label.append(point_label[0])
+
+            if len(point_coord) > 2:
+                point_coord = point_label[:2]
+                point_label = point_label[:2]
+
+            point_coord = np.array(point_coord)
+            point_label = np.array(point_label)
         # transform the input
         if self.transform:
             # save the current random number generate for reproducibility
@@ -76,15 +92,15 @@ class ISIC2016(Dataset):
             image = self.transform(image)
             torch.set_rng_state(state)
         if self.transform_mask:
+            # save the current random number generate for reproducibility
             state = torch.get_rng_state()
-            label = self.transform_mask(label).int()
+            label = self.transform_mask(label)
             torch.set_rng_state(state)
-        name = Path(self.list_images[idx]).name[:-4]
+        label = label.clamp(min=0, max=1).int()
         return {
             "image": image,
             "label": label,
             "point_label": point_label,
             "point_coord": point_coord,
-            "filename": name
+            "filename": self.names[idx],
         }
-

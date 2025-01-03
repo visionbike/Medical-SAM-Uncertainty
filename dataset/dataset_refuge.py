@@ -13,7 +13,7 @@ __all__ = [
 
 class REFUGE(Dataset):
     """
-    REFUGE Dataset forOptic-disc Segmentation from Fundus Images (2D).
+    REFUGE Dataset for Optic-disc Segmentation from Fundus Images (2D).
     Link: https://huggingface.co/datasets/realslimman/REFUGE-MultiRater/tree/main
     """
     def __init__(
@@ -67,18 +67,18 @@ class REFUGE(Dataset):
             cv2.imread((self.folder_images[idx] / f"{self.folder_images[idx].name}_seg_disc_{i}.png").__str__(), cv2.IMREAD_GRAYSCALE)
             for i in range(1, 8)
         ]
+        # resize the label's resolution as same as image's
+        label_cups_ = [
+            cv2.resize(label_, (self.image_size, self.image_size))
+            for label_ in label_cups
+        ]
+        label_discs_ = [
+            cv2.resize(label_, (self.image_size, self.image_size))
+            for label_ in label_discs
+        ]
         # get click points
         point_label, point_coord_cup, point_coord_disc = 1, np.array([0, 0], np.int32),  np.array([0, 0], np.int32)
         if self.prompt == "click":
-            # resize labels for generating click point
-            label_cups_ = [
-                cv2.resize(label_, (self.image_size, self.image_size))
-                for label_ in label_cups
-            ]
-            label_discs_ = [
-                cv2.resize(label_, (self.image_size, self.image_size))
-                for label_ in label_discs
-            ]
             point_label, point_coord_cup = random_click(np.mean(np.stack(label_cups_), axis=0) / 255, point_labels=1)
             point_label, point_coord_disc = random_click(np.mean(np.stack(label_discs_), axis=0) / 255, point_labels=1)
         # transform the input

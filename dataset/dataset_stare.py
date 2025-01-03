@@ -1,6 +1,5 @@
 from typing import Optional, Callable, Dict
 from pathlib import Path
-import fireducks.pandas as pd
 import numpy as np
 import cv2
 import torch
@@ -8,19 +7,18 @@ from torch.utils.data import Dataset
 from .utils import *
 
 __all__ = [
-    "ISIC2016"
+    "STARE"
 ]
 
 
-class ISIC2016(Dataset):
+class STARE(Dataset):
     """
-    ISIC Dataset ver. 2016 for Melanoma Segmentation from Skin Images (2D).
-    Link: https://challenge.isic-archive.com/data/
+    STARE Dataset for Retinal Blood Vessel (2D).
+    Link: https://cecas.clemson.edu/~ahoover/stare/probing/index.html
     """
     def __init__(
         self,
         path: str,
-        mode: str,
         prompt: str = "click",
         image_size: int = 1024,
         transform: Optional[Callable] = None,
@@ -28,29 +26,25 @@ class ISIC2016(Dataset):
     ) -> None:
         """
         Args:
-            path(str): data path.
-            mode (str): mode for loading training or testing dataset.
+            path (str): data path.
             prompt (str): prompt types, including
                 "none": no applying prompt.
                 "click": applying click prompt.
                 "box": applying bbox prompt.
             image_size (int): input image size.
             transform (Callable): transform functions for image.
-            transform_mask: transform function for mask.
+            transform_mask (Callable): transform function for mask.
         """
         super().__init__()
-        df = pd.read_csv(Path(path, f"ISBI2016_ISIC_Part1_{mode}_GroundTruth.csv"), encoding="gbk")
-        self.list_images = df.iloc[:, 1].tolist()
-        self.list_labels = df.iloc[:, 2].tolist()
-        self.path_data = path
-        self.mode = mode
+        self.path = path
+        self.names = [f.name[:-4] for f in sorted(Path(path, f"images").iterdir()) if f.is_file()]
         self.prompt = prompt
         self.image_size = image_size
         self.transform = transform
         self.transform_mask = transform_mask
 
     def __len__(self) -> int:
-        return len(self.list_images)
+        return len(self.names)
 
     def __getitem__(self, idx: int) -> Dict:
         """
@@ -59,10 +53,10 @@ class ISIC2016(Dataset):
         Returns:
             (Dict): image, ground truth (mask), prompt data and related metadata.
         """
-        # read image and label (mask)
-        image = cv2.imread(f"{self.path_data}/{self.list_images[idx]}")
+        # read image and labels (masks) which are evaluated by different subjects
+        image = cv2.imread(f"{self.path}/images/{self.names[idx]}.ppm")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = cv2.imread(f"{self.path_data}/{self.list_labels[idx]}", cv2.IMREAD_GRAYSCALE)
+        label = cv2.imread(f"{self.path}/labels/{self.names[idx]}.ah.ppm", cv2.IMREAD_GRAYSCALE)
         # resize the label's resolution as same as image's
         label = cv2.resize(label, (self.image_size, self.image_size))
         # get click points
@@ -76,15 +70,15 @@ class ISIC2016(Dataset):
             image = self.transform(image)
             torch.set_rng_state(state)
         if self.transform_mask:
+            # save the current random number generate for reproducibility
             state = torch.get_rng_state()
             label = self.transform_mask(label).int()
             torch.set_rng_state(state)
-        name = Path(self.list_images[idx]).name[:-4]
         return {
             "image": image,
             "label": label,
             "point_label": point_label,
             "point_coord": point_coord,
-            "filename": name
+            "filename": self.names[idx]
         }
 
