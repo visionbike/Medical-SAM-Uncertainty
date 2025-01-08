@@ -13,9 +13,5 @@ class ModelBase(ABC):
         pass
 
     @abstractmethod
-    def validate(self, **kwargs) -> None:
-        pass
-
-    @abstractmethod
     def test(self, **kwargs) -> None:
         pass

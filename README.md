@@ -37,24 +37,64 @@ bash scripts/download_dataset.sh STARE
 - Extract IDRiD dataset (can be downloaded from [here](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid)).
 ```shell
 bash script/download.sh IDRiD
-``` 
+```
+
+### Directory Structure
+
+The project's directories consist of:
+
+├── project-directory/
+│   ├── cfgs/
+│   ├── data/
+│   ├── dataset/
+│   ├── graph/
+│   │   ├── logs/
+│   │   ├── metric/
+│   │   ├── optimizer/
+│   │   ├── network/
+│   │   │   ├── decoder/
+│   │   │   ├── encoder/
+│   │   │   ├── layer/
+│   │   │   ├── mobile_sam_v2/
+│   │   │   └── sam/
+│   │   └── mobile_sam_v2/
+│   ├── model/
+│   ├── pretrain_models/
+│   ├── scripts/
+│   ├── utils/
+│   ├── train.py
+│   ├── README.md
+│   └── requirements.txt
 
 ### Train SAM model
 
-Please take a look in `cfgs/default.yaml` to change the training parameters based on 
+Please take a look in `cfgs/default_train.yaml` to change the training parameters based on 
 the configuration as described in [Medical SAM Adapter](https://github.com/SuperMedIntel/Medical-SAM-Adapter/tree/main) repo.
 
 Run the training code as bellows:
 
 ```shell
-python train.py -cfg cfgs/default.yaml
+python train.py -cfg cfgs/default_train.yaml
 ```
 
-In "default.yaml", you can consider and modify these arguments: `gpu_device`, `pretrain`, `epochs`, `val_freq`, `vis_freq`, 
-`dataset`, `path`, `batch_size`, `multimask_output
+In `default_train.yaml`, you can consider and modify these arguments: `gpu_device`, `pretrain`, `epochs`, `val_freq`, `vis_freq`, 
+`dataset`, `path`, `batch_size`, `multimask_output`, `lr`, `loss`.
 
 You can check the results in `logs` folder. In `logs`, each experiment folder includes:
-- `ckpt` contains checkpoint files.
+- `ckpt` contains checkpoint files. The best checkpoint will be stored under the name `checkpoint_best.pth`
 - `log` contains log files.
 - `run` contains tensorboard visualization.
 - `sample` contains output's visualization.
+
+### Test SAM model
+
+Please take a look in `cfgs/default_test.yaml` to change the training parameters based on 
+the configuration as described in [Medical SAM Adapter](https://github.com/SuperMedIntel/Medical-SAM-Adapter/tree/main) repo.
+
+You NEED to set the trained model's checkpoint path in `ckpt` argument.
+
+Run the training code as bellows:
+
+```shell
+python test.py -cfg cfgs/default_test.yaml
+```

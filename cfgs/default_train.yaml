@@ -1,4 +1,6 @@
 ExpConfig:
+  # train or test
+  mode: train
   # whether to use gpu
   use_gpu: True
   # which gpu device id to use
@@ -8,24 +10,24 @@ ExpConfig:
   # checkpoint path for pretrained model, with null is None
   pretrain: sam_vit_b_01ec64.pth
   # checkpoint path for trained model, with null is None
-  ckpt: null
+  ckpt: ./logs/train_isic_sam_adapt_128_2025-01-08-15-24-39/ckpt/checkpoint_best.pth
   # number of training epochs
-  epochs: 100
+  epochs: 5
   # validation frequency
-  val_freq: 5
+  val_freq: 1
   # visualization frequency
-  vis_freq: 5
+  vis_freq: 8
 DataConfig:
   # the dataset name: isic, refuge, ddti, stare, idrid
   dataset: isic
   # dataset path stored in ./data
   path: ./data/ISIC2016
   # image size
-  image_size: 1024
+  image_size: 128
   # output size
-  output_size: 1024
+  output_size: 128
   # batch size
-  batch_size: 32
+  batch_size: 8
   # number of workers
   workers: 4
   # whether to shuffle dataset
@@ -34,7 +36,6 @@ DataConfig:
   # 1: for [ISIC, DDTI, STARE] datasets
   # 2: for [REFUGE] dataset
   # 5: IDRiD: for [IDRiD] dataset
-
   multimask_output: 1
 NetworkConfig:
   # network type: "sam", "mobile_sam_v2"

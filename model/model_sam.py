@@ -1,7 +1,7 @@
 from typing import Tuple, Dict
 from abc import ABC
 import time
-from logging import Logger
+import shutil
 from argparse import Namespace
 from pathlib import Path
 import torch
@@ -27,27 +27,53 @@ class ModelSAM(ModelBase, ABC):
         self.args = args
         self.device, self.device_ids = get_device(args.ExpConfig.use_gpu, args.ExpConfig.gpu_device, args.ExpConfig.distributed)
         self.net = get_network(args.NetworkConfig, use_gpu=args.ExpConfig.use_gpu, device=self.device, distributed=self.device_ids, pretrain=args.ExpConfig.pretrain)
-        self.optimizer, self.lr_scheduler = get_optimizer(args.OptimConfig, self.net.parameters())
+        if self.args.ExpConfig.mode == "train":
+            self.optimizer, self.lr_scheduler = get_optimizer(args.OptimConfig, self.net.parameters())
+        else:
+            self.optimizer, self.lr_scheduler = None, None
         self.criterion = get_loss(args.LossConfig, device=self.device)
         self.metrics = get_metrics(args.MetricConfig)
         # create log directories
         self.log_paths = create_log_directory("logs", args.ExpConfig.exp_name)
-        print(self.log_paths)
-        self.writer_train = SummaryWriter(log_dir=f"{self.log_paths['path_run']}/train")
-        self.writer_val = SummaryWriter(log_dir=f"{self.log_paths['path_run']}/val")
+        if self.args.ExpConfig.mode == "train":
+            self.writer_train = SummaryWriter(log_dir=f"{self.log_paths['path_run']}/train")
+            self.writer_val = SummaryWriter(log_dir=f"{self.log_paths['path_run']}/val")
+        elif self.args.ExpConfig.mode in ["val", "test"]:
+            self.writer_val = SummaryWriter(log_dir=f"{self.log_paths['path_run']}/test")
+        # load checkpoint weight for resume training/testing
+        if self.args.ExpConfig.ckpt is not None:
+            print(f"=> Loading checkpoint '{self.args.ExpConfig.ckpt}'")
+            if self.args.ExpConfig.mode == "train":
+                checkpoint = torch.load(self.args.ExpConfig.ckpt, map_location=self.device, weights_only=False)
+                self.start_epoch = checkpoint["epoch"]
+                self.loss_best = checkpoint["loss_best"]
+                self.dice_best = checkpoint["dice_best"]
+            else:
+                checkpoint = torch.load(self.args.ExpConfig.ckpt, map_location=self.device, weights_only=True)
+            self.net.load_state_dict(checkpoint["state_dict"], strict=False)
+            if not (Path(self.log_paths["path_ckpt"]) / "checkpoint_best.pth").exists():
+                shutil.copyfile(self.args.ExpConfig.ckpt, f"{self.log_paths['path_ckpt']}/checkpoint_best.pth")
+        else:
+            self.start_epoch = 0
+            self.loss_best = 1e-4
+            self.dice_best = 0.
+
 
     def train(self, dataset: str, train_loader: DataLoader, val_loader: DataLoader) -> None:
         # set up logger for training
         logger = create_logger(log_dir=self.log_paths["path_log"])
         logger.info(self.args)
 
-        # init best score
-        dice_best = 0.
-        loss_best = 1e4
-
-        for epoch in range(self.args.ExpConfig.epochs):
+        for epoch in range(self.start_epoch, self.args.ExpConfig.epochs):
             if epoch < 5:
-                self.validate(epoch, dataset, val_loader, logger, is_vis=False)
+                loss, dice_scores, iou_scores, corr_scores = self.validate_epoch(epoch, val_loader, is_vis=False)
+                if dataset == "refuge":
+                    logger.info(
+                        f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]}, CORR_DISC: {corr_scores[0]}, CORR_CUP: {corr_scores[1]} || @ epoch {epoch}."
+                    )
+                else:
+                    logger.info(
+                        f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores}, CORR: {corr_scores} || @ epoch {epoch}.")
 
             time_start = time.time()
             loss = self.train_epoch(epoch, train_loader)
@@ -57,15 +83,28 @@ class ModelSAM(ModelBase, ABC):
             self.writer_train.add_scalar("Loss", loss, epoch)
 
             if self.args.ExpConfig.val_freq and (epoch % self.args.ExpConfig.val_freq == 0 or epoch == self.args.ExpConfig.epochs - 1):
-                loss_val, dice_val, iou_val, corr_val = self.validate(epoch, dataset, val_loader, logger, is_vis=True)
+                loss, dice_scores, iou_scores, corr_scores = self.validate_epoch(epoch, val_loader, is_vis=True)
+                if dataset == "refuge":
+                    logger.info(
+                        f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]}, CORR_DISC: {corr_scores[0]}, CORR_CUP: {corr_scores[1]} || @ epoch {epoch}."
+                    )
+                else:
+                    logger.info(
+                        f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores}, CORR: {corr_scores} || @ epoch {epoch}.")
+
+                loss_val = loss.item()
+                dice_val = dice_scores.mean().item()
+                iou_val = iou_scores.mean().item()
+                corr_val = corr_scores.mean().item()
+
                 self.writer_val.add_scalar("Loss", loss_val, epoch)
                 self.writer_val.add_scalar("Dice", dice_val, epoch)
                 self.writer_val.add_scalar("IOU", iou_val, epoch)
                 self.writer_val.add_scalar("Corr", corr_val, epoch)
 
-                if dice_val > dice_best:
-                    loss_best = loss_val
-                    dice_best = dice_val
+                if dice_val > self.dice_best:
+                    self.loss_best = loss_val
+                    self.dice_best = dice_val
                     is_best = True
                 else:
                     is_best = False
@@ -76,8 +115,8 @@ class ModelSAM(ModelBase, ABC):
                         "model": self.args.NetworkConfig.net,
                         "state_dict": self.net.state_dict(),
                         "optimizer": self.optimizer.state_dict(),
-                        "loss_best": loss_best,
-                        "dice_best": dice_best,
+                        "loss_best": self.loss_best,
+                        "dice_best": self.dice_best,
                         "log_paths": self.log_paths,
                     },
                     is_best=is_best,
@@ -86,19 +125,6 @@ class ModelSAM(ModelBase, ABC):
 
         self.writer_train.close()
         self.writer_val.close()
-
-    def validate(self, epoch: int, dataset: str, val_loader: DataLoader, logger: Logger, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
-        loss, dice_scores, iou_scores, corr_scores = self.validate_epoch(epoch, val_loader, is_vis)
-        if dataset == "refuge":
-            logger.info(
-                f"Val Loss: {loss}, IOU_CUP: {iou_scores[0]}, IOU_DISC: {iou_scores[1]}, DICE_CUP: {dice_scores[0]}, DICE_DISC: {dice_scores[1]}, CORR_DISC: {corr_scores[0]}, CORR_CUP: {corr_scores[1]} || @ epoch {epoch}."
-            )
-        else:
-            logger.info(f"Val Loss: {loss}, DICE: {dice_scores}, IOU: {iou_scores}, CORR: {corr_scores} || @ epoch {epoch}.")
-        dice_mean = dice_scores.mean()
-        iou_mean = iou_scores.mean()
-        corr_mean = corr_scores.mean()
-        return loss.item(), dice_mean.item(), iou_mean.item(), corr_mean.item()
 
     def train_epoch(self, epoch: int, train_loader: DataLoader) -> torch.Tensor:
         self.net.train()
@@ -189,7 +215,6 @@ class ModelSAM(ModelBase, ABC):
                 self.optimizer.zero_grad()
 
                 pbar.update()
-        # return loss.item()
         return loss_epoch / num_train
 
     def validate_epoch(self, epoch: int, val_loader: DataLoader, is_vis: bool = False) -> Tuple[torch.Tensor, ...]:
@@ -210,7 +235,6 @@ class ModelSAM(ModelBase, ABC):
                 else:
                     point_coords = data["point_coord"]
                     point_labels = data["point_label"]
-                name = data["filename"][0]
 
                 if point_labels.clone().flatten()[0] != -1:
                     point_coords_torch = torch.as_tensor(point_coords, dtype=torch.float, device=self.device)
@@ -247,21 +271,28 @@ class ModelSAM(ModelBase, ABC):
                     iou_total += iou_scores
                     corr_total += corr_scores
 
+                # visual image
+                if is_vis and self.args.ExpConfig.vis_freq and i % self.args.ExpConfig.vis_freq == 0:
+                    if self.args.DataConfig.batch_size == 1:
+                        name = f"{data['filename'][0]}_epoch{epoch}"
+                    else:
+                        name = f"batch{i}_epoch{epoch}"
+
+                    visualize_images(
+                        images.detach().cpu(),
+                        labels.detach().cpu(),
+                        preds.detach().cpu(),
+                        entropies.detach().cpu(),
+                        maes.detach().cpu(),
+                        save_path=Path(self.log_paths["path_sample"]),
+                        filename=name,
+                        prefix="val",
+                        writer=self.writer_val,
+                        reverse=False,
+                        num_rows=self.args.DataConfig.batch_size
+                    )
+
                 pbar.update()
-            # visual image
-            if is_vis and self.args.ExpConfig.vis_freq and i % self.args.ExpConfig.vis_freq == 0:
-                visualize_images(
-                    images.detach().cpu(),
-                    labels.detach().cpu(),
-                    preds.detach().cpu(),
-                    entropies.detach().cpu(),
-                    maes.detach().cpu(),
-                    save_path=Path(self.log_paths["path_sample"]),
-                    filename=f"{name}_epoch_{epoch}",
-                    prefix="val",
-                    writer=self.writer_val,
-                    reverse=False
-                )
 
         return loss_total / num_val, dice_total / num_val, iou_total / num_val, corr_scores / num_val
 
@@ -288,5 +319,105 @@ class ModelSAM(ModelBase, ABC):
         if is_best:
             torch.save(state, (Path(self.log_paths["path_ckpt"]) / "checkpoint_best.pth"))
 
-    def test(self, **kwargs) -> None:
-         pass
+    def test(self, dataset: str, test_loader: DataLoader) -> None:
+        # set up logger for training
+        logger = create_logger(log_dir=self.log_paths["path_log"])
+        logger.info(self.args)
+        self.net.eval()
+        num_test = len(test_loader)
+        loss_total = 0.
+        dice_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
+        iou_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
+        corr_total = torch.zeros(self.args.DataConfig.multimask_output, dtype=torch.float32)
+        with tqdm(total=num_test, desc="Testing", unit="batch", leave=False) as pbar:
+            for i, data in enumerate(test_loader):
+                images = data["image"].to(dtype=torch.float32, device=self.device)
+                labels = data["label"].to(dtype=torch.float32, device=self.device)
+                # check generated points for prompting
+                if "point_coord" not in data:
+                    from dataset import generate_click_prompt
+                    images, point_coords, labels = generate_click_prompt(images, labels)
+                else:
+                    point_coords = data["point_coord"]
+                    point_labels = data["point_label"]
+
+                if point_labels.clone().flatten()[0] != -1:
+                    point_coords_torch = torch.as_tensor(point_coords, dtype=torch.float, device=self.device)
+                    point_labels_torch = torch.as_tensor(point_labels, dtype=torch.int, device=self.device)
+                    if len(point_labels.shape) == 1:
+                        # only one point prompt
+                        point_coords_torch, point_labels_torch = point_coords_torch[None, :, :], point_labels_torch[None, :]
+                    point_coords = (point_coords_torch, point_labels_torch)
+
+                with torch.no_grad():
+                    embed_image = self.net.image_encoder(images)
+                    if self.args.NetworkConfig.net in ["sam", "mobile_sam_v2"]:
+                        embed_sparse, embed_dense = self.net.prompt_encoder(
+                            points=point_coords,
+                            boxes=None,
+                            masks=None
+                        )
+
+                        preds_, _ = self.net.mask_decoder(
+                            image_embeddings=embed_image,
+                            image_pe=self.net.prompt_encoder.get_dense_pe(),
+                            sparse_prompt_embeddings=embed_sparse,
+                            dense_prompt_embeddings=embed_dense,
+                            multimask_output=(self.args.DataConfig.multimask_output > 1),
+                        )
+
+                    # resize to the ordered output size
+                    preds = fn.interpolate(preds_,
+                                           size=(self.args.DataConfig.output_size, self.args.DataConfig.output_size))
+                    loss_total += self.criterion(preds, labels)
+
+                    # compute metrics
+                    dice_scores, iou_scores, entropies, maes, corr_scores = self.evaluate_results(preds, labels)
+                    dice_total += dice_scores
+                    iou_total += iou_scores
+                    corr_total += corr_scores
+
+                    # visual image
+                    if self.args.DataConfig.batch_size == 1:
+                        name = data["filename"][0]
+                    else:
+                        name = f"batch_{i}"
+
+                    visualize_images(
+                        images.detach().cpu(),
+                        labels.detach().cpu(),
+                        preds.detach().cpu(),
+                        entropies.detach().cpu(),
+                        maes.detach().cpu(),
+                        save_path=Path(self.log_paths["path_sample"]),
+                        filename=name,
+                        prefix="test",
+                        writer=self.writer_val,
+                        reverse=False,
+                        num_rows=self.args.DataConfig.batch_size,
+                    )
+
+                pbar.update()
+
+        loss_total /= num_test
+        dice_total /= num_test
+        iou_total /= num_test
+        corr_total /= num_test
+
+        if dataset == "refuge":
+            logger.info(
+                f"Testing Loss: {loss_total}, IOU_CUP: {iou_total[0]}, IOU_DISC: {iou_total[1]}, DICE_CUP: {dice_total[0]}, DICE_DISC: {dice_total[1]}, CORR_DISC: {corr_scores[0]}, CORR_CUP: {corr_scores[1]}."
+            )
+        else:
+            logger.info(
+                f"Testing Loss: {loss_total}, DICE: {dice_total}, IOU: {iou_total}, CORR: {corr_total}.")
+
+        loss_test = loss_total.item()
+        dice_test = dice_scores.mean().item()
+        iou_test = iou_scores.mean().item()
+        corr_test = corr_scores.mean().item()
+
+        self.writer_val.add_scalar("Loss", loss_test, 1)
+        self.writer_val.add_scalar("Dice", dice_test, 1)
+        self.writer_val.add_scalar("IOU", iou_test, 1)
+        self.writer_val.add_scalar("Corr", corr_test, 1)

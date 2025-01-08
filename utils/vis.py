@@ -24,6 +24,7 @@ def visualize_images(
         prefix: Optional[str] = None,
         writer: Optional[SummaryWriter] = None,
         reverse: bool = False,
+        num_rows: Optional[int] = None,
 ) -> None:
     """
     Visualize images: input, predicted and target images.
@@ -39,11 +40,14 @@ def visualize_images(
         prefix (str): prefix string.
         writer (SummaryWriter): tensorboard writer.
         reverse (bool): whether to make reversed-value map.
+        num_rows (int): number of images in a row to visualize.
     """
     file_path = save_path / (f"{prefix}_{filename}.jpg" if prefix is not None else f"{filename}.jpg")
     B, C, H, W = mask_tgt.shape
     # number of visualized images
-    num_rows = min(B, 4)
+    if num_rows is None:
+        num_rows = 1
+    num_rows = min(B, num_rows)
 
     transform = vtf2.Compose([vtf2.ToImage(), vtf2.ToDtype(torch.float32, scale=True)])
 

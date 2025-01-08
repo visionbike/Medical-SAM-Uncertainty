@@ -65,7 +65,7 @@ class ConfigYAML(ConfigBase, ABC):
             return namespace
 
     def _add_arguments(self):
-        self.parser.add_argument("-cfg", default="./cfgs/default.yaml", help="the path of YAML config file.")
+        self.parser.add_argument("-cfg", default="./cfgs/default_train.yaml", help="the path of YAML config file.")
 
     def _print_args(self):
         super()._print_args()
@@ -90,60 +90,6 @@ class ConfigYAML(ConfigBase, ABC):
         if cfgs.ExpConfig.pretrain is not None:
             Path("pretrain_models").mkdir(parents=True, exist_ok=True)
             cfgs.ExpConfig.pretrain =f"pretrain_models/{cfgs.ExpConfig.pretrain}"
-
-        cfgs.ExpConfig.exp_name = f"{cfgs.DataConfig.dataset}_{cfgs.NetworkConfig.net}_{cfgs.NetworkConfig.block}_{cfgs.DataConfig.image_size}"
-        # # initiate experiment configs
-        # exp_tags = []    # tags
-        # exp_name = ""    # exp name
-        # if "DataConfig" in cfgs.keys():
-        #     # setup experiment name and config
-        #     data_tags = cfgs.DataConfig.name.split("_")
-        #     exp_tags += data_tags
-        #     exp_name += cfgs.DataConfig.name
-        #     # setup data name
-        #     cfgs.DataConfig.name = data_tags[0]
-        #     # setup num_classes
-        #     if not cfgs.DataConfig.dataset_kwargs.use_rest_label:
-        #         cfgs.DataConfig.num_classes -= 1
-        #     # setup data validation mode
-        #     cfgs.DataConfig.mode = cfgs.ExpConfig.split
-        # num_classes = cfgs.DataConfig.pop("num_classes")
-        # #
-        # if "NetworkConfig" in cfgs.keys():
-        #     exp_name += "_" + cfgs.NetworkConfig.name + "_" + cfgs.NetworkConfig.attn_kwargs.name
-        #     exp_tags += [cfgs.NetworkConfig.name]
-        #     exp_tags += ["attn_" + cfgs.NetworkConfig.attn_kwargs.name if cfgs.NetworkConfig.attn_kwargs.name != "none" else cfgs.NetworkConfig.attn_kwargs.name]
-        #     cfgs.NetworkConfig.num_classes = num_classes
-        # #
-        # if "LossConfig" in cfgs.keys():
-        #     exp_tags += [cfgs.LossConfig.name]
-        #     # if cfgs.LossConfig.name == "focal":
-        #         # cfgs.LossConfig.alpha = get_class_weights(num_classes, cfgs.LossConfig.alpha)
-        #     cfgs.LossConfig.num_classes = num_classes
-        #
-        # if "OptimConfig" in cfgs.keys():
-        #     exp_tags += [cfgs.OptimConfig.name]
-        #
-        # if "LrSchedulerConfig" in cfgs.keys():
-        #     exp_tags += [cfgs.LRSchedulerConfig.name]
-        #
-        # cfgs.MetricConfig = cn()
-        # cfgs.MetricConfig.num_classes = num_classes
-        #
-        # if "ExpConfig" in cfgs.keys():
-        #     # name
-        #     cfgs.ExpConfig.name = exp_name + "_" + cfgs.ExpConfig.split + "_exp" + str(cfgs.ExpConfig.experiment)
-        #     cfgs.ExpConfig.tags = exp_tags + [cfgs.ExpConfig.split]
-        #     # create "experiment" directory
-        #     exp_path = Path("./experiments") / cfgs.ExpConfig.name
-        #     exp_path.mkdir(parents=True, exist_ok=True)
-        #     if not (exp_path / f"config.yaml").exists():
-        #         shutil.copyfile(self.args.cfg, exp_path / f"config.yaml")
-        #     # setup experiment configs
-        #     cfgs.ExpConfig.exp_path = str(exp_path)
-
-        # print configurations
-        # print(f"### Configurations:\n{cfgs}")
-        # print(type(cfgs))
+        cfgs.ExpConfig.exp_name = f"{cfgs.ExpConfig.mode}_{cfgs.DataConfig.dataset}_{cfgs.NetworkConfig.net}_{cfgs.NetworkConfig.block}_{cfgs.DataConfig.image_size}"
         cfgs = self._convert_to_namespace(cfgs)
         return cfgs
