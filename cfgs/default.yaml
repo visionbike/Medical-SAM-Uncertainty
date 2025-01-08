@@ -16,10 +16,10 @@ ExpConfig:
   # visualization frequency
   vis_freq: 1
 DataConfig:
-  # the dataset name: isic, refuge
-  dataset: "isic"
+  # the dataset name: isic, refuge, ddti, stare, idrid
+  dataset: isic
   # dataset path stored in ./data
-  path: "./data/ISIC2016"
+  path: ./data/ISIC2016
   # image size
   image_size: 128
   # output size
@@ -35,25 +35,25 @@ DataConfig:
   multimask_output: 1
 NetworkConfig:
   # network type: "sam", "mobile_sam_v2"
-  net: "sam"
+  net: sam
   # encoder type: "default", "vit_t", "vit_b", "vit_l", "vit_h"
-  encoder: "default"
+  encoder: default
   # block type: "default", "adapt", "lora", "adalora"
-  block: "adapt"
+  block: adapt
   # middle dim of adapter or the rank of lora matrix
   # default: null
   mid_dim: null
 OptimConfig:
   # optimizer name: null, "adam"
-  optimizer: "adam"
+  optimizer: adam
   # lr scheduler name: null, "step"
-  lr_scheduler: "step"
+  lr_scheduler: step
   # learning rate
   lr: 0.0001
 LossConfig:
   # criterion name: "bce_w_logit", "dice"
-  loss: "bce_w_logit"
+  loss: bce_w_logit
 MetricConfig:
   # metric names: "dice", "dice_coeff "mae", "entropy", "iou", "corr_coeff"
-  metrics: ["dice_coeff", "iou", "mae", "entropy", "corr_coeff"]
+  metrics: [dice_coeff, iou, mae, entropy, corr_coeff]
   thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]

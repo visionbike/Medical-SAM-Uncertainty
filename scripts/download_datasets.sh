@@ -104,4 +104,7 @@ elif [ "$NAME" == "STARE" ]; then
   done
   rm "$IMAGE_FILENAME.tar"
   rm "$LABEL_FILENAME.tar"
+
+elif [ "$NAME" == "IDRiD" ]; then
+  unzip "$NAME.zip" -d "./data"
 fi
