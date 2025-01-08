@@ -7,18 +7,19 @@ from torch.utils.data import Dataset
 from .utils import *
 
 __all__ = [
-    "STARE"
+    "IDRiD"
 ]
 
 
-class STARE(Dataset):
+class IDRiD(Dataset):
     """
-    STARE Dataset for Retinal Blood Vessel (2D).
+    IDRiD Dataset for Indian Diabetic Retinopathy Image Dataset.
     Link: https://cecas.clemson.edu/~ahoover/stare/probing/index.html
     """
     def __init__(
         self,
         path: str,
+        mode: str,
         prompt: str = "click",
         image_size: int = 1024,
         transform: Optional[Callable] = None,
@@ -27,6 +28,7 @@ class STARE(Dataset):
         """
         Args:
             path (str): data path.
+            mode (str): mode for loading training and testing dataset.
             prompt (str): prompt types, including
                 "none": no applying prompt.
                 "click": applying click prompt.
@@ -37,7 +39,8 @@ class STARE(Dataset):
         """
         super().__init__()
         self.path = path
-        self.names = [f.name[:-4] for f in sorted(Path(path, f"images").iterdir()) if f.is_file()]
+        self.mode = mode
+        self.names = [f.name[:-4] for f in sorted(Path(path, "image", mode).iterdir()) if f.is_file()]
         self.prompt = prompt
         self.image_size = image_size
         self.transform = transform
@@ -54,16 +57,22 @@ class STARE(Dataset):
             (Dict): image, ground truth (mask), prompt data and related metadata.
         """
         # read image and labels (masks) which are evaluated by different subjects
-        image = cv2.imread(f"{self.path}/images/{self.names[idx]}.ppm")
+        image = cv2.imread(f"{self.path}/image/{self.mode}/{self.names[idx]}.jpg")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = cv2.imread(f"{self.path}/labels/{self.names[idx]}.ah.ppm", cv2.IMREAD_GRAYSCALE)
-        # resize the label's resolution as same as image's
-        label = cv2.resize(label, (self.image_size, self.image_size))
-        # get click points
+        label = []
+        for subdir in Path(self.path, "mask", self.mode).iterdir():
+            if (subdir / f"{self.names[idx]}_{subdir.name}.tif").exists():
+                mask = cv2.imread(f"{subdir}/{self.names[idx]}_{subdir.name}.tif", cv2.IMREAD_GRAYSCALE)
+                mask = cv2.resize(mask, (self.image_size, self.image_size))
+            else:
+                mask = np.zeros((self.image_size, self.image_size), dtype=np.uint8)
+            mask[mask != 0] = 255
+            label.append(mask)
+        label = np.stack(label, axis=-1)
         point_label, point_coord = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
-            point_label, point_coord = random_click(label / 255., point_labels=1)
-        # transform the input
+            point_label, point_coord = random_click(label[:, :, 0] / 255., point_labels=1)
+        # print(point_label, point_coord)
         if self.transform:
             # save the current random number generate for reproducibility
             state = torch.get_rng_state()
@@ -72,7 +81,7 @@ class STARE(Dataset):
         if self.transform_mask:
             # save the current random number generate for reproducibility
             state = torch.get_rng_state()
-            label = self.transform_mask(label).int()
+            label = self.transform_mask(label)
             torch.set_rng_state(state)
         return {
             "image": image,

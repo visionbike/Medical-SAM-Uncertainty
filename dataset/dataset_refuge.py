@@ -43,6 +43,7 @@ class REFUGE(Dataset):
         self.mode = mode
         self.prompt = prompt
         self.image_size = image_size
+        self.mask_size = image_size
         self.transform = transform
         self.transform_mask = transform_mask
 
@@ -57,30 +58,23 @@ class REFUGE(Dataset):
             (Dict): image, ground truth (mask), prompt data and related metadata.
         """
         # read image and labels (masks) which are evaluated by different subjects
-        image = cv2.imread((self.folder_images[idx] / f"{self.folder_images[idx].name}.jpg").__str__())
+        image = cv2.imread(f"{self.folder_images[idx]}/{self.folder_images[idx].name}.jpg")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label_cups = [
-            cv2.imread((self.folder_images[idx] / f"{self.folder_images[idx].name}_seg_cup_{i}.png").__str__(), cv2.IMREAD_GRAYSCALE)
-            for i in range(1, 8)
-        ]
-        label_discs = [
-            cv2.imread((self.folder_images[idx] / f"{self.folder_images[idx].name}_seg_disc_{i}.png").__str__(), cv2.IMREAD_GRAYSCALE)
-            for i in range(1, 8)
-        ]
-        # resize the label's resolution as same as image's
-        label_cups_ = [
-            cv2.resize(label_, (self.image_size, self.image_size))
-            for label_ in label_cups
-        ]
-        label_discs_ = [
-            cv2.resize(label_, (self.image_size, self.image_size))
-            for label_ in label_discs
-        ]
+        label_cups, label_discs = [], []
+        for i in range(1, 8):
+            cup = cv2.imread(f"{self.folder_images[idx]}/{self.folder_images[idx].name}_seg_cup_{i}.png", cv2.IMREAD_GRAYSCALE)
+            cup = cv2.resize(cup, (self.image_size, self.image_size))
+            disc = cv2.imread(f"{self.folder_images[idx]}/{self.folder_images[idx].name}_seg_disc_{i}.png", cv2.IMREAD_GRAYSCALE)
+            disc = cv2.resize(disc, (self.image_size, self.image_size))
+            label_cups.append(cup)
+            label_discs.append(disc)
+        label_cups = np.stack(label_cups, axis=-1)
+        label_discs = np.stack(label_discs, axis=-1)
         # get click points
         point_label, point_coord_cup, point_coord_disc = 1, np.array([0, 0], np.int32),  np.array([0, 0], np.int32)
         if self.prompt == "click":
-            point_label, point_coord_cup = random_click(np.mean(np.stack(label_cups_), axis=0) / 255, point_labels=1)
-            point_label, point_coord_disc = random_click(np.mean(np.stack(label_discs_), axis=0) / 255, point_labels=1)
+            point_label, point_coord_cup = random_click(np.mean(label_cups, axis=-1) / 255., point_labels=1)
+            # point_label, point_coord_disc = random_click(np.mean(label_discs, axis=-1) / 255., point_labels=1)
         # transform the input
         if self.transform:
             # save the current random number generate for reproducibility
@@ -90,42 +84,21 @@ class REFUGE(Dataset):
         if self.transform_mask:
             # save the current random number generate for reproducibility
             state = torch.get_rng_state()
-            label_cups = [
-                torch.as_tensor((self.transform_mask(label_) > 0.5).float(), dtype=torch.float32)
-                for label_ in label_cups
-            ]
-            label_discs = [
-                torch.as_tensor((self.transform_mask(label_) > 0.5).float(), dtype=torch.float32)
-                for label_ in label_discs
-            ]
+            label_cups = torch.as_tensor((self.transform_mask(label_cups) > 0.5).float(), dtype=torch.float32)
+            label_discs = torch.as_tensor((self.transform_mask(label_discs) > 0.5).float(), dtype=torch.float32)
             torch.set_rng_state(state)
-        else:
-            label_cups = [
-                torch.as_tensor(((label_ / 255.) > 0.5).float(), dtype=torch.float32)
-                for label_ in label_cups
-            ]
-            label_discs = [
-                torch.as_tensor(((label_ / 255.) > 0.5).float(), dtype=torch.float32)
-                for label_ in label_discs
-            ]
-        label_cups = torch.stack(label_cups, dim=0)
-        label_discs = torch.stack(label_discs, dim=0)
-        label = torch.concate([label_cups.mean(dim=0), label_discs.mean(dim=0)], dim=0)
+        label = torch.concat([label_cups.mean(dim=0, keepdim=True), label_discs.mean(dim=0, keepdim=True)], dim=0)
         # get bbox positions
         box_cup, box_disc = [0, 0, 0, 0], [0, 0, 0, 0]
         if self.prompt == "box":
            box_cup = random_box(label_cups)
-           box_disc = random_box(label_discs)
+           # box_disc = random_box(label_discs)
         name = Path(self.folder_images[idx]).name
         return {
             "image": image,
             "label": label,
             "point_label": point_label,
             "point_coord": point_coord_cup,
-            "point_coord_cup": point_coord_cup,
-            "point_coord_disc": point_coord_disc,
-            "box_cup": box_cup,
-            "box_disc": box_disc,
+            "box_coord": box_cup,
             "filename": name
         }
-
