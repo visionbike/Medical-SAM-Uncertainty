@@ -1,7 +1,7 @@
 ExpConfig:
   # whether to use gpu
   use_gpu: True
-  # which gpu device to use
+  # which gpu device id to use
   gpu_device: 0
   # multiple gpu ids to use, with null is None
   distributed: null
@@ -10,28 +10,31 @@ ExpConfig:
   # checkpoint path for trained model, with null is None
   ckpt: null
   # number of training epochs
-  epochs: 10
+  epochs: 100
   # validation frequency
   val_freq: 5
   # visualization frequency
-  vis_freq: 1
+  vis_freq: 5
 DataConfig:
   # the dataset name: isic, refuge, ddti, stare, idrid
   dataset: isic
   # dataset path stored in ./data
   path: ./data/ISIC2016
   # image size
-  image_size: 128
+  image_size: 1024
   # output size
-  output_size: 128
+  output_size: 1024
   # batch size
-  batch_size: 1
+  batch_size: 32
   # number of workers
   workers: 4
   # whether to shuffle dataset
   shuffle: True
   # the number of mask outputs for multi-class segmentation:
-  # 1 for ISIC dataset, 2 for REFUGE dataset, other for BTCV dataset
+  # 1: for [ISIC, DDTI, STARE] datasets
+  # 2: for [REFUGE] dataset
+  # 5: IDRiD: for [IDRiD] dataset
+
   multimask_output: 1
 NetworkConfig:
   # network type: "sam", "mobile_sam_v2"

@@ -6,19 +6,38 @@ pip install -r requirements.txt
 
 ### Download datasets
 
-- Download ISIC dataset
-
 ```shell
 chmod +x scripts/download_dataset.sh
+```
+
+- Download **ISIC** dataset
+
+```shell
 bash scripts/download_dataset.sh ISIC2016
 ```
 
-- Download REFUGE dataset
+- Download **REFUGE** dataset
 
-```shell
-chmod +x scripts/download_dataset.sh 
+```shell 
 bash scripts/download_dataset.sh REFUGE
 ```
+
+- Download **DDTI** dataset
+
+```shell
+bash scripts/download_dataset.sh DDTI
+```
+
+- Download **STARE** dataset
+
+```shell
+bash scripts/download_dataset.sh STARE
+```
+
+- Extract IDRiD dataset (can be downloaded from [here](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid)).
+```shell
+bash script/download.sh IDRiD
+``` 
 
 ### Train SAM model
 
@@ -31,4 +50,11 @@ Run the training code as bellows:
 python train.py -cfg cfgs/default.yaml
 ```
 
-You can check the results in `logs` folder.
+In "default.yaml", you can consider and modify these arguments: `gpu_device`, `pretrain`, `epochs`, `val_freq`, `vis_freq`, 
+`dataset`, `path`, `batch_size`, `multimask_output
+
+You can check the results in `logs` folder. In `logs`, each experiment folder includes:
+- `ckpt` contains checkpoint files.
+- `log` contains log files.
+- `run` contains tensorboard visualization.
+- `sample` contains output's visualization.
