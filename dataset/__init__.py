@@ -16,14 +16,14 @@ __all__ = [
 
 def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
     """
-    Get dataloaders for training and validation
+    Get dataloaders for training and validation.
+
     Args:
         args (Namespace): Data configuration.
     Returns:
         (Tuple): train and test dataloaders.
     """
     # define image/mask transformation for train/test datasets
-
     transform_image = vtf2.Compose([
         vtf2.ToImage(),
         vtf2.ToDtype(torch.uint8),
@@ -75,6 +75,16 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_idrid_test = IDRiD(args.path, mode="Testing", image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
         loader_train = DataLoader(dataset_idrid_train, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_idrid_test, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "idrid":
+        from .dataset_flare22 import FLARE22
+        dataset_flare = FLARE22(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_flare_size = len(dataset_flare)
+        dataset_flare_indices = list(range(dataset_flare_size))
+        split = int(np.floor(0.2 * dataset_flare_size))
+        sampler_train = SubsetRandomSampler(dataset_flare_indices[:split])
+        sampler_test = SubsetRandomSampler(dataset_flare_indices[split:])
+        loader_train = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     else:
         print("The dataset is not supported now!!!")
     return loader_train, loader_test

@@ -100,11 +100,48 @@ elif [ "$NAME" == "STARE" ]; then
     if [ -f "$file" ]; then
         gzip -d "$file"
     fi
-  rm -f
+    rm -f
   done
   rm "$IMAGE_FILENAME.tar"
   rm "$LABEL_FILENAME.tar"
 
+# Download IDRiD dataset
 elif [ "$NAME" == "IDRiD" ]; then
+  if [ ! -e "$NAME.zip" ]; then
+    echo "$NAME.zip not found!"
+  fi
   unzip "$NAME.zip" -d "./data"
+
+#  Download LiTS17 dataset
+#elif [ "$NAME" == "LiTS17" ]; then
+#  FILENAME1="liver-tumor-segmentation"
+#  FILENAME2="liver-tumor-segmentation-part-2"
+#  if [ ! -e "$FILENAME1.zip" ]; then
+#    echo "Downloading $FILENAME1.zip..."
+#    kaggle datasets download "andrewmvd/$FILENAME1"
+#  fi
+#  if [ ! -e "$FILENAME2.zip" ]; then
+#    echo "Downloading $FILENAME2.zip..."
+#    kaggle datasets download "andrewmvd/$FILENAME2"
+#  fi
+#  unzip "$FILENAME1.zip" -d "./data/"
+#  unzip "$FILENAME2.zip" -d "./data/"
+#  mv "./data/LiTS(train_test)" "./data/LiTS17"
+#  rm "$FILENAME.zip"
+  # preprocess LiTS17 dataset
+#  python preprocess_lits17.py
+
+# Download FLARE dataset
+elif [ "$NAME" == "FLARE22" ]; then
+  FILENAME="miccai-flare22-challenge-dataset"
+  if [ ! -e "$FILENAME.zip" ]; then
+    echo "Downloading $FILENAME.zip..."
+    kaggle datasets download "prathamkumar0011/$FILENAME"
+  fi
+  unzip "$FILENAME.zip" -d "./data"
+  mv "./data/${NAME}Train" "./data/$NAME"
+  rm "$FILENAME.zip"
+  # preprocess FLARE22 dataset
+  python preprocess_flare22.py
+  rm -rf "./data/$NAME/${NAME}Train"
 fi

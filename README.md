@@ -13,30 +13,37 @@ chmod +x scripts/download_dataset.sh
 - Download **ISIC** dataset
 
 ```shell
-bash scripts/download_dataset.sh ISIC2016
+./scripts/download_dataset.sh ISIC2016
 ```
 
 - Download **REFUGE** dataset
 
 ```shell 
-bash scripts/download_dataset.sh REFUGE
+./scripts/download_dataset.sh REFUGE
 ```
 
 - Download **DDTI** dataset
 
 ```shell
-bash scripts/download_dataset.sh DDTI
+./scripts/download_dataset.sh DDTI
 ```
 
 - Download **STARE** dataset
 
 ```shell
-bash scripts/download_dataset.sh STARE
+./scripts/download_dataset.sh STARE
 ```
 
 - Extract IDRiD dataset (can be downloaded from [here](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid)).
+
 ```shell
-bash script/download.sh IDRiD
+./script/download.sh IDRiD
+```
+
+- Download and preprocess FLARE22 (can be downloaded from [here](https://www.kaggle.com/datasets/prathamkumar0011/miccai-flare22-challenge-dataset)). Since it is 3D dataset, it will be processed to slice a volume into N slice.
+
+```shell
+./script/download.sh FLARE22
 ```
 
 ### Directory Structure
