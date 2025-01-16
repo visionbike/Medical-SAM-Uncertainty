@@ -71,7 +71,7 @@ class IDRiD(Dataset):
         label = np.stack(label, axis=-1)
         point_label, point_coord = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
-            point_label, point_coord = random_click(label[:, :, 0] / 255., point_labels=1)
+            point_label, point_coord = random_click(label[..., 0] / 255., point_labels=1)
         # print(point_label, point_coord)
         if self.transform:
             # save the current random number generate for reproducibility

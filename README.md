@@ -43,7 +43,19 @@ chmod +x scripts/download_dataset.sh
 - Download and preprocess FLARE22 (can be downloaded from [here](https://www.kaggle.com/datasets/prathamkumar0011/miccai-flare22-challenge-dataset)). Since it is 3D dataset, it will be processed to slice a volume into N slice.
 
 ```shell
+# download FLARE22
 ./script/download.sh FLARE22
+# preprocess FLARE22
+python preprocess_flare22.py
+```
+
+- Download and preprocess LiTS17 (can be downloaded from [here](https://www.kaggle.com/code/ojshavsaxena/liver-tumor-segmentation-u-net)). Since it is 3D dataset, it will be processed to slice a volume into N slice.
+
+```shell
+# download LiTS17
+./script/download.sh LiTS17 
+# preprocess LiTS17
+python preprocess_lits17.py
 ```
 
 ### Directory Structure

@@ -75,9 +75,9 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_idrid_test = IDRiD(args.path, mode="Testing", image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
         loader_train = DataLoader(dataset_idrid_train, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_idrid_test, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True)
-    elif args.dataset == "idrid":
+    elif args.dataset == "flare":
         from .dataset_flare22 import FLARE22
-        dataset_flare = FLARE22(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_flare = FLARE22(args.path, num_classes=13, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
         dataset_flare_size = len(dataset_flare)
         dataset_flare_indices = list(range(dataset_flare_size))
         split = int(np.floor(0.2 * dataset_flare_size))
@@ -85,6 +85,16 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         sampler_test = SubsetRandomSampler(dataset_flare_indices[split:])
         loader_train = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "lits":
+        from .dataset_lits17 import LiTS17
+        dataset_lits = LiTS17(args.path, num_classes=3, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_lits_size = len(dataset_lits)
+        dataset_lits_indices = list(range(dataset_lits_size))
+        split = int(np.floor(0.2 * dataset_lits_size))
+        sampler_train = SubsetRandomSampler(dataset_lits_indices[:split])
+        sampler_test = SubsetRandomSampler(dataset_lits_indices[split:])
+        loader_train = DataLoader(dataset_lits, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_lits, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     else:
         print("The dataset is not supported now!!!")
     return loader_train, loader_test
