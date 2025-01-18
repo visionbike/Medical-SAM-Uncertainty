@@ -62,18 +62,10 @@ class FLARE22(Dataset):
         label = cv2.imread(f"{self.path_data}/labels/{self.names[idx]}", cv2.IMREAD_GRAYSCALE)
         # resize the label's resolution as same as image's
         label = cv2.resize(label, (self.image_size, self.image_size))
-        masks = []
-        unique = np.unique(label)
-        for i in range(1, self.num_classes + 1):
-            mask = np.zeros((self.image_size, self.image_size), dtype=np.uint8)
-            if i in unique:
-                mask[label == i] = 255
-            masks.append(mask)
-        mask = np.stack(masks, axis=-1)
         # get click points
         point_label, point_coord = 1, np.array([0, 0], np.int32)
         if self.prompt == "click":
-            point_label, point_coord = random_click(mask[..., 0] / 255., point_labels=1)
+            point_label, point_coord = random_click(label / 255., point_labels=1)
         # transform the input
         if self.transform:
             # save the current random number generate for reproducibility
@@ -82,12 +74,12 @@ class FLARE22(Dataset):
             torch.set_rng_state(state)
         if self.transform_mask:
             state = torch.get_rng_state()
-            mask = self.transform_mask(mask).int()
+            label = self.transform_mask(label).int()
             torch.set_rng_state(state)
         name = self.names[idx][:-4]
         return {
             "image": image,
-            "label": mask,
+            "label": label,
             "point_label": point_label,
             "point_coord": point_coord,
             "filename": name

@@ -7,44 +7,44 @@ pip install -r requirements.txt
 ### Download datasets
 
 ```shell
-chmod +x scripts/download_dataset.sh
+chmod +x ./scripts/download_datasets.sh
 ```
 
 - Download **ISIC** dataset
 
 ```shell
-./scripts/download_dataset.sh ISIC2016
+./scripts/download_datasets.sh ISIC2016
 ```
 
 - Download **REFUGE** dataset
 
 ```shell 
-./scripts/download_dataset.sh REFUGE
+./scripts/download_datasets.sh REFUGE
 ```
 
 - Download **DDTI** dataset
 
 ```shell
-./scripts/download_dataset.sh DDTI
+./scripts/download_datasets.sh DDTI
 ```
 
 - Download **STARE** dataset
 
 ```shell
-./scripts/download_dataset.sh STARE
+./scripts/download_datasets.sh STARE
 ```
 
 - Extract IDRiD dataset (can be downloaded from [here](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid)).
 
 ```shell
-./script/download.sh IDRiD
+./scripts/download_datasets.sh IDRiD
 ```
 
 - Download and preprocess FLARE22 (can be downloaded from [here](https://www.kaggle.com/datasets/prathamkumar0011/miccai-flare22-challenge-dataset)). Since it is 3D dataset, it will be processed to slice a volume into N slice.
 
 ```shell
 # download FLARE22
-./script/download.sh FLARE22
+./scripts/download_datasets.sh FLARE22
 # preprocess FLARE22
 python preprocess_flare22.py
 ```
@@ -53,7 +53,7 @@ python preprocess_flare22.py
 
 ```shell
 # download LiTS17
-./script/download.sh LiTS17 
+./scripts/download_datasets.sh LiTS17 
 # preprocess LiTS17
 python preprocess_lits17.py
 ```
