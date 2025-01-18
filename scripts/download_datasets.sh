@@ -129,6 +129,17 @@ elif [ "$NAME" == "STARE" ]; then
   done
   rm "$LABEL_FILENAME.tar"
 
+# Download DRIVE dataset
+elif [ "$NAME" == "DRIVE" ]; then
+  FILENAME="drive-dataset-for-blood-vessel-segmentation"
+  #
+  if [ ! -e "$FILENAME.zip" ]; then
+    echo "Downloading $FILENAME.zip..."
+    kaggle datasets download "adityabhongade/$FILENAME"
+  fi
+  unzip "$FILENAME.zip" -d "./data"
+  rm "$FILENAME.zip"
+
 # Download IDRiD dataset
 elif [ "$NAME" == "IDRiD" ]; then
   if [ ! -e "$NAME.zip" ]; then
@@ -139,9 +150,10 @@ elif [ "$NAME" == "IDRiD" ]; then
 # Download LiTS17 dataset
 elif [ "$NAME" == "LiTS17" ]; then
   mkdir -p "./data/$NAME"
+  #
   FILENAME1="liver-tumor-segmentation"
   FILENAME2="liver-tumor-segmentation-part-2"
-
+  #
   if [ ! -e "$FILENAME1.zip" ]; then
     echo "Downloading $FILENAME1.zip..."
     kaggle datasets download "andrewmvd/$FILENAME1"
@@ -150,18 +162,18 @@ elif [ "$NAME" == "LiTS17" ]; then
     echo "Downloading $FILENAME2.zip..."
     kaggle datasets download "andrewmvd/$FILENAME2"
   fi
-  unzip "$FILENAME1.zip" -d "./data/LiTS17"
-  unzip "$FILENAME2.zip" -d "./data/LiTS17"
+  unzip "$FILENAME1.zip" -d "./data/$NAME"
+  unzip "$FILENAME2.zip" -d "./data/$NAME"
   rm "$FILENAME1.zip"
   rm "$FILENAME2.zip"
-  cp -r "./data/LiTS17/segmentations" "./data/LiTS17/labels_nii"
-  rm -rf "./data/LiTS17/segmentations"
+  cp -r "./data/$NAME/segmentations" "./data/$NAME/labels_nii"
+  rm -rf "./data/$NAME/segmentations"
   for i in {1..8}; do
     if [ "$i" -eq 7 ]; then
       continue
     fi
-    cp -r "./data/LiTS17/volume_pt$i/." "./data/LiTS17/volumes_nii"
-    rm -rf "./data/LiTS17/volume_pt$i"
+    cp -r "./data/$NAME/volume_pt$i/." "./data/$NAME/volumes_nii"
+    rm -rf "./data/$NAME/volume_pt$i"
   done
 
 # Download FLARE dataset

@@ -34,6 +34,12 @@ chmod +x ./scripts/download_datasets.sh
 ./scripts/download_datasets.sh STARE
 ```
 
+- Download **DRIVE** dataset
+
+```shell
+./scripts/download_datasets.sh DRIVE
+````
+
 - Extract IDRiD dataset (can be downloaded from [here](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid)).
 
 ```shell
