@@ -18,7 +18,7 @@ ExpConfig:
   # visualization frequency
   vis_freq: 8
 DataConfig:
-  # the dataset name: isic, refuge, ddti, stare, idrid
+  # the dataset name: "isic", "refuge", "ddti", "stare", "drive", "idrid", "flare", "lits", "runmc", "bmc", "i2cvb", "bidmc", "ucl", "hk"
   dataset: isic
   # dataset path stored in ./data
   path: ./data/ISIC2016
@@ -33,7 +33,7 @@ DataConfig:
   # whether to shuffle dataset
   shuffle: True
   # the number of mask outputs for multi-class segmentation:
-  # 1: for [ISIC, DDTI, STARE] datasets
+  # 1: for [ISIC, DDTI, STARE, FLARE22, LiTS17, RUNMC, BMC, I2CVB, BIDMC, UCL, HK] datasets
   # 2: for [REFUGE] dataset
   # 5: IDRiD: for [IDRiD] dataset
   multimask_output: 1

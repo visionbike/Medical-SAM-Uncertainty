@@ -7,13 +7,13 @@ from torch.utils.data import Dataset
 from .utils import *
 
 __all__ = [
-    "FLARE22"
+    "UCL"
 ]
 
 
-class FLARE22(Dataset):
+class UCL(Dataset):
     """
-    FLARE Dataset ver. 2016 for Organ segmentation (3D).
+    UCL Dataset for Prostate segmentation (3D).
     Link:
     """
     def __init__(

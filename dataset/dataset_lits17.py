@@ -21,7 +21,6 @@ class LiTS17(Dataset):
         path: str,
         prompt: str = "click",
         image_size: int = 1024,
-        num_classes: int = 3,
         transform: Optional[Callable] = None,
         transform_mask: Optional[Callable] = None
     ) -> None:
@@ -33,7 +32,6 @@ class LiTS17(Dataset):
                 "click": applying click prompt.
                 "box": applying bbox prompt.
             image_size (int): input image size.
-            num_classes (int): number of classes.
             transform (Callable): transform functions for image.
             transform_mask: transform function for mask.
         """
@@ -42,7 +40,6 @@ class LiTS17(Dataset):
         self.names = [f.name for f in sorted(Path(path, "images").iterdir()) if f.is_file()]
         self.prompt = prompt
         self.image_size = image_size
-        self.num_classes = num_classes
         self.transform = transform
         self.transform_mask = transform_mask
 

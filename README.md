@@ -64,6 +64,16 @@ python preprocess_flare22.py
 python preprocess_lits17.py
 ```
 
+- Unzip and preprocess Multi-site Dataset for Prostate MRI Segmentation (can be downloaded from [here](https://liuquande.github.io/SAML/)). Since it is 3D dataset, it will be processed to slice a volume into N slice
+- The Multi-site Dataset for Prostate MRI Segmentation include 6 datasets (RUNMC, BMC, I2CVB, BIDMC, UCL, HK) from different sites.
+
+
+```shell
+# download LiTS17
+./scripts/download_datasets.sh PROSTATE
+# preprocess LiTS17
+python preprocess_prostate.py
+
 ### Directory Structure
 
 The project's directories consist of:

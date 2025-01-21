@@ -12,7 +12,7 @@ ExpConfig:
   # checkpoint path for trained model, with null is None
   ckpt: ./logs/train_isic_sam_adapt_128_2025-01-08-15-24-39/ckpt/checkpoint_best.pth
 DataConfig:
-  # the dataset name: isic, refuge, ddti, stare, idrid
+  # the dataset name: "isic", "refuge", "ddti", "stare", "drive", "idrid", "flare", "lits", "runmc", "bmc", "i2cvb", "bidmc", "ucl", "hk"
   dataset: isic
   # dataset path stored in ./data
   path: ./data/ISIC2016

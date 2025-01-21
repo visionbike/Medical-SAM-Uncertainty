@@ -191,4 +191,13 @@ elif [ "$NAME" == "FLARE22" ]; then
   cp -r "./data/${NAME}Train/${NAME}Train/labels/." "./data/$NAME/labels_nii"
   rm -rf "./data/${NAME}Train"
   rm "$FILENAME.zip"
+
+# Download PROSTATE dataset
+elif [ "$NAME" == "PROSTATE" ]; then
+  mkdir -p "./data/$NAME"
+  #
+  if [ ! -e "$NAME.zip" ]; then
+    echo "$NAME.zip not found!"
+  fi
+  unzip "$NAME.zip" -d "./data/$NAME"
 fi

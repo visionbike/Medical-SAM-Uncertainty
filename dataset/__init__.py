@@ -55,8 +55,8 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_ddti_size = len(dataset_ddti)
         dataset_ddti_indices = list(range(dataset_ddti_size))
         split = int(np.floor(0.2 * dataset_ddti_size))
-        sampler_train = SubsetRandomSampler(dataset_ddti_indices[:split])
-        sampler_test = SubsetRandomSampler(dataset_ddti_indices[split:])
+        sampler_test = SubsetRandomSampler(dataset_ddti_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_ddti_indices[split:])
         loader_train = DataLoader(dataset_ddti, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_ddti, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     elif args.dataset == "stare":
@@ -65,8 +65,8 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_stare_size = len(dataset_stare)
         dataset_stare_indices = list(range(dataset_stare_size))
         split = int(np.floor(0.2 * dataset_stare_size))
-        sampler_train = SubsetRandomSampler(dataset_stare_indices[:split])
-        sampler_test = SubsetRandomSampler(dataset_stare_indices[split:])
+        sampler_test = SubsetRandomSampler(dataset_stare_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_stare_indices[split:])
         loader_train = DataLoader(dataset_stare, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_stare, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     elif args.dataset == "drive":
@@ -87,8 +87,8 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_flare_size = len(dataset_flare)
         dataset_flare_indices = list(range(dataset_flare_size))
         split = int(np.floor(0.2 * dataset_flare_size))
-        sampler_train = SubsetRandomSampler(dataset_flare_indices[:split])
-        sampler_test = SubsetRandomSampler(dataset_flare_indices[split:])
+        sampler_test = SubsetRandomSampler(dataset_flare_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_flare_indices[split:])
         loader_train = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_flare, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     elif args.dataset == "lits":
@@ -97,10 +97,70 @@ def get_dataloaders(args: Namespace) -> Tuple[DataLoader, DataLoader]:
         dataset_lits_size = len(dataset_lits)
         dataset_lits_indices = list(range(dataset_lits_size))
         split = int(np.floor(0.2 * dataset_lits_size))
-        sampler_train = SubsetRandomSampler(dataset_lits_indices[:split])
-        sampler_test = SubsetRandomSampler(dataset_lits_indices[split:])
+        sampler_test = SubsetRandomSampler(dataset_lits_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_lits_indices[split:])
         loader_train = DataLoader(dataset_lits, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
         loader_test = DataLoader(dataset_lits, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "runmc":
+        from .dataset_runmc import RUNMC
+        dataset_runmc = RUNMC(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_runmc_size = len(dataset_runmc)
+        dataset_runmc_indices = list(range(dataset_runmc_size))
+        split = int(np.floor(0.2 * dataset_runmc_size))
+        sampler_test = SubsetRandomSampler(dataset_runmc_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_runmc_indices[split:])
+        loader_train = DataLoader(dataset_runmc, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_runmc, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "bmc":
+        from .dataset_bmc import BMC
+        dataset_bmc = BMC(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_bmc_size = len(dataset_bmc)
+        dataset_bmc_indices = list(range(dataset_bmc_size))
+        split = int(np.floor(0.2 * dataset_bmc_size))
+        sampler_test = SubsetRandomSampler(dataset_bmc_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_bmc_indices[split:])
+        loader_train = DataLoader(dataset_bmc, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_bmc, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "i2cvb":
+        from .dataset_i2cvb import I2CVB
+        dataset_i2cvb = I2CVB(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_i2cvb_size = len(dataset_i2cvb)
+        dataset_i2cvb_indices = list(range(dataset_i2cvb_size))
+        split = int(np.floor(0.2 * dataset_i2cvb_size))
+        sampler_test = SubsetRandomSampler(dataset_i2cvb_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_i2cvb_indices[split:])
+        loader_train = DataLoader(dataset_i2cvb, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_i2cvb, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "bidmc":
+        from .dataset_bidmc import BIDMC
+        dataset_bidmc = BIDMC(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_bidmc_size = len(dataset_bidmc)
+        dataset_bidmc_indices = list(range(dataset_bidmc_size))
+        split = int(np.floor(0.2 * dataset_bidmc_size))
+        sampler_test = SubsetRandomSampler(dataset_bidmc_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_bidmc_indices[split:])
+        loader_train = DataLoader(dataset_bidmc, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_bidmc, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "ucl":
+        from .dataset_ucl import UCL
+        dataset_ucl = UCL(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_ucl_size = len(dataset_ucl)
+        dataset_ucl_indices = list(range(dataset_ucl_size))
+        split = int(np.floor(0.2 * dataset_ucl_size))
+        sampler_test = SubsetRandomSampler(dataset_ucl_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_ucl_indices[split:])
+        loader_train = DataLoader(dataset_ucl, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_ucl, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
+    elif args.dataset == "hk":
+        from .dataset_hk import HK
+        dataset_hk = HK(args.path, image_size=args.image_size, transform=transform_image, transform_mask=transform_label)
+        dataset_hk_size = len(dataset_hk)
+        dataset_hk_indices = list(range(dataset_hk_size))
+        split = int(np.floor(0.2 * dataset_hk_size))
+        sampler_test = SubsetRandomSampler(dataset_hk_indices[:split])
+        sampler_train = SubsetRandomSampler(dataset_hk_indices[split:])
+        loader_train = DataLoader(dataset_hk, batch_size=args.batch_size, sampler=sampler_train, num_workers=args.workers, pin_memory=True)
+        loader_test = DataLoader(dataset_hk, batch_size=args.batch_size, sampler=sampler_test, num_workers=args.workers, pin_memory=True)
     else:
         print("The dataset is not supported now!!!")
     return loader_train, loader_test
