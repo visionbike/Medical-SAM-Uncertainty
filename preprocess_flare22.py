@@ -18,20 +18,16 @@ if __name__ == "__main__":
         assert image.shape == label.shape
         print(f"CT Shape: {image.shape}, Label shape: {label.shape}")
         # only get liver mask
-        label[label != 1] = 0
+        label[label > 1] = 0
         label[label == 1] = 255
-        # get number of CT scan
-        # assert len(np.unique(label)) == 14
-        # print(f"Unique values: {len(unique)}")
-        image = image.astype(np.float32)
         label = label.astype(np.uint8)
         # save one of every two CT slices
         for i in range(0, image.shape[-1], 2):
             label_slice = label[..., i]
+            image_slice = image[..., i]
             if label_slice.sum() == 0:
                 continue
-            image_slice = create_nchannel_map(image[..., i].astype(np.float32), [(60, 150), (60, 200)])
-            image_slice = (image_slice * 255).astype(np.uint8)
-            image_slice = cv2.cvtColor(image_slice, cv2.COLOR_RGB2BGR)
+            image_slice = (image_slice - image_slice.min()) / (image_slice.max() - image_slice.min())
+            image_slice = (np.expand_dims(image_slice, -1) * 255).astype(np.uint8)
             cv2.imwrite(f"{path_image}/{filename[:-4]}_slice_{i}.png", image_slice)
             cv2.imwrite(f"{path_label}/{filename[:-4]}_slice_{i}.png", label_slice)
